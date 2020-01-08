@@ -23,42 +23,39 @@ balbal
 npm install cipher-chain --save
 ```
 
-blabla
-
-```js
-const cipherChain = require('cipher-chain')
-```
-
 ## Usage
 
-Bla balbalbal
+```js
+const Cipher = require('cipher-chain')
+
+// First create the object with a chosen secret
+const cipherChain = new Cipher('uber secret')
+
+// You can choose to encrypt and decrypt with just one cipher
+let encrypted = await ciphering.encrypt('secret data', 'aes-256-gcm')
+let decrypted = await ciphering.decrypt(encrypted) // returns: secret data
+
+// You can also encrypt objects/arrays instead of strings
+let encrypted = await ciphering.encrypt({ secretdata: true }, 'aes-256-gcm')
+let decrypted = await ciphering.decrypt(encrypted) // returns: { secretdata: true }
+
+// Or chain encrypt/decrypt, here doing a three-pass encryption starting from aes-256-gcm to aes-128-ctr and lastly to bf-cbc
+let encrypted = await ciphering.encrypt('secret data', ['aes-256-gcm', 'aes-128-ctr', 'bf-cbc'])
+let decrypted = await ciphering.decrypt(encrypted) // returns: secret data
+```
 
 #### Ciphers
 
-| Cipher  |
-| ------- |
-| `blbal` |
-
-#### Blabla?
+To get a list of available ciphers use:
 
 ```js
-;(async () => {
-  const ciphering = new Ciphering('uber secret')
+const Cipher = require('cipher-chain')
 
-  // Encrypt/Decrypt individually
-  console.log('Encrypting: ', 'secret data')
-  for (let cipher in ciphering.ciphers) {
-    console.log('\n-', cipher)
-    let encrypted = await ciphering.encrypt({ yeet: 123 }, cipher)
-    let decrypted = await ciphering.decrypt(encrypted)
-    console.log('decrypted: ', decrypted)
-  }
-})()
+// First create the object with a chosen secret
+const cipherChain = new Cipher('uber secret')
+
+console.log(cipherChain.ciphers)
 ```
-
-#### blaba
-
-blaba
 
 ## License
 
