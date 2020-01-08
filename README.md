@@ -21,6 +21,10 @@ Encrypting and decrypting your data in chains made easy!<br>
 npm install cipher-chain --save
 ```
 
+## How it works
+
+<p align="center"><img src="https://i.imgur.com/7mnOF4Y.png" /></p>
+
 ## Usage
 
 ```js

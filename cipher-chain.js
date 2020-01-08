@@ -28,10 +28,6 @@ class Ciphering {
     if (_.get(options, 'saltLength')) {
       this.saltLength = parseInt(options.saltLength)
     }
-    this.salt = false
-    if (_.get(options, 'salt')) {
-      this.salt = options.salt
-    }
 
     this.kdfs = {
       pbkdf2: {
