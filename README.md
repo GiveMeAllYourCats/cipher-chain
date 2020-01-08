@@ -27,40 +27,55 @@ npm install cipher-chain --save
 const Cipher = require('cipher-chain')
 
 // First create the object with a chosen secret
-const cipherChain = new Cipher('uber secret')
+const cipherChain = new Cipher('uber secret') /// this will use default options settings
 // Or
 const cipherChain = new cipherChain({
   secret: 'uber secret',
-  kdf: 'pbkdf2', // or argon2 (but not supported yet!)
-  options: { // options for the kdf function
-    rounds: 40000, // Default 20000
-    hash: 'sha512'
+  kdf: 'argon2', // or pbkdf2
+  options: { // options for the kdf function, in this case argon2
+	  timeCost: 6,
+	  memoryCost: 1024 * 4,
+	  parallelism: 1,
   }
 
 // You can choose to encrypt and decrypt with just one cipher
-let encrypted = await ciphering.encrypt('secret data', 'aes-256-gcm')
-let decrypted = await ciphering.decrypt(encrypted) // returns: secret data
+let encrypted = await cipherChain.encrypt('secret data', 'aes-256-gcm')
+let decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
 
 // You can also encrypt objects/arrays instead of strings
-let encrypted = await ciphering.encrypt({ secretdata: true }, 'aes-256-gcm')
-let decrypted = await ciphering.decrypt(encrypted) // returns: { secretdata: true }
+encrypted = await cipherChain.encrypt({ secretdata: true }, 'aes-256-gcm')
+decrypted = await cipherChain.decrypt(encrypted) // returns: { secretdata: true }
 
 // Or chain encrypt/decrypt, here doing a three-pass encryption starting from aes-256-gcm to aes-128-ctr and lastly to bf-cbc
-let encrypted = await ciphering.encrypt('secret data', ['aes-256-gcm', 'aes-128-ctr', 'bf-cbc'])
-let decrypted = await ciphering.decrypt(encrypted) // returns: secret data
+encrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'aes-128-ctr', 'bf-cbc'])
+decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
 ```
 
-#### Ciphers
+## Api
 
-To get a list of available ciphers use:
+#### cipherChain.ciphers()
+
+_Gets a list of all availible ciphers to work with_
+
+#### cipherChain.encrypt(data:[any], encryptionChain:[array, string])
+
+_Encrypts a plaintext string, object, number or array to a cipher-chain encrypted string_
+
+**example:**
 
 ```js
-const Cipher = require('cipher-chain')
+let encrypted = await cipherChain.encrypt('secret data', 'aes-256-gcm')
+let chainEncrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'bf-cbc', 'camellia-256-cbc'])
+```
 
-// First create the object with a chosen secret
-const cipherChain = new Cipher('uber secret')
+#### cipherChain.decrypt(encrypted:string)
 
-console.log(cipherChain.ciphers)
+_Decrypts a given cipher-chain string, will try to return as a object if it can be one_
+
+**example:**
+
+```js
+let decrypted = await cipherChain.decrypt(encrypted)
 ```
 
 ## License
