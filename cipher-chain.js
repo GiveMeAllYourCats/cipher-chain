@@ -1,12 +1,15 @@
 const crypto = require('crypto')
 const _ = require('lodash')
 const argon2 = require('argon2')
+
+const ciphers = require('./ciphers.js')
+
 const debug = {
-  encrypt: require('debug')('ciphering:encrypt'),
-  decrypt: require('debug')('ciphering:decrypt'),
-  chainDecrypt: require('debug')('ciphering:chain:decrypt'),
-  chainEncrypt: require('debug')('ciphering:chain:encrypt'),
-  warning: require('debug')('ciphering:warning')
+  encrypt: require('debug')('cipherchain:encrypt'),
+  decrypt: require('debug')('cipherchain:decrypt'),
+  chainDecrypt: require('debug')('cipherchain:chain:decrypt'),
+  chainEncrypt: require('debug')('cipherchain:chain:encrypt'),
+  warning: require('debug')('cipherchain:warning')
 }
 
 class Ciphering {
@@ -18,77 +21,7 @@ class Ciphering {
     }
     this.version = 1
     this.chain = false
-
-    this.ciphers = {
-      'aes-256-gcm': {
-        iv: 16,
-        key: 16
-      },
-      'aes-128-gcm': {
-        iv: 16,
-        key: 8
-      },
-      'aes-128-ctr': {
-        iv: 8,
-        key: 8
-      },
-      'aes-256-cbc': {
-        iv: 8,
-        key: 16
-      },
-      'aes-256-ctr': {
-        iv: 8,
-        key: 16
-      },
-      'aes-128-cbc': {
-        iv: 8,
-        key: 8
-      },
-      'bf-cbc': {
-        iv: 4,
-        key: 16
-      },
-      'aria-256-gcm': {
-        iv: 16,
-        key: 16
-      },
-      'aria-256-ctr': {
-        iv: 8,
-        key: 16
-      },
-      'aria-192-gcm': {
-        iv: 16,
-        key: 12
-      },
-      'aria-192-cbc': {
-        iv: 8,
-        key: 12
-      },
-      'aria-192-ctr': {
-        iv: 8,
-        key: 12
-      },
-      'camellia-192-cbc': {
-        iv: 8,
-        key: 12
-      },
-      'camellia-192-ctr': {
-        iv: 8,
-        key: 12
-      },
-      'camellia-256-cbc': {
-        iv: 8,
-        key: 16
-      },
-      'cast-cbc': {
-        iv: 4,
-        key: 16
-      },
-      'cast5-cbc': {
-        iv: 4,
-        key: 16
-      }
-    }
+    this.ciphers = ciphers
 
     this.kdfs = {
       pbkdf2: {
@@ -102,14 +35,13 @@ class Ciphering {
         name: 'argon2',
         options: {
           type: argon2.argon2i,
-          timeCost: 1,
-          memoryCost: 4096,
-          saltLength: 16
+          timeCost: 3,
+          memoryCost: 1 << 12
         }
       }
     }
 
-    this.kdf = this.kdfs['pbkdf2']
+    this.kdf = this.kdfs.argon2
     if (_.get(options, 'kdf')) {
       this.kdf = this.kdfs[options.kdf]
     }
@@ -165,6 +97,9 @@ class Ciphering {
     if (typeof plaintext == 'object') {
       plaintext = JSON.stringify(plaintext)
     }
+    if (typeof plaintext == 'number') {
+      plaintext = String(plaintext)
+    }
 
     if (typeof algorithm == 'object') {
       this.chain = algorithm
@@ -175,6 +110,10 @@ class Ciphering {
     const iv = this.generateSalt(this.ciphers[algorithm].iv)
     const secret = await this.hasher(this.secret, salt, this.ciphers[algorithm].key)
 
+    debug.encrypt(`-- Encrypt: ${algorithm} --`)
+    debug.encrypt(`iv: ${iv} (${iv.length})`)
+    debug.encrypt(`secret: ${secret} (${secret.length})`)
+    debug.encrypt(`hashsalt: ${salt} (${salt.length})`)
     const cipher = crypto.createCipheriv(algorithm, secret, iv)
     let encrypted = cipher.update(plaintext, 'utf8', 'hex')
     encrypted += cipher.final('hex')
@@ -192,7 +131,8 @@ class Ciphering {
 
     const protocolString = `${this.version}:${algorithm}:${salt}:${iv}:${authtag}:${encrypted}`
     const result = Buffer.from(protocolString).toString('base64')
-    debug.encrypt(`${plaintext} -> ${encrypted} [${algorithm}]`)
+    debug.encrypt(`plaintext: ${plaintext}`)
+    debug.encrypt(`encrypted: ${result}`)
 
     return result
   }
@@ -218,6 +158,13 @@ class Ciphering {
     const authtag = decryptionObject[4]
     encrypted = decryptionObject[5]
     const secret = await this.hasher(this.secret, salt, this.ciphers[algorithm].key)
+    debug.decrypt(`-- Decrypt: ${algorithm} --`)
+    debug.decrypt(`iv: ${iv} (${iv.length})`)
+    debug.decrypt(`secret: ${secret} (${secret.length})`)
+    debug.decrypt(`hashsalt: ${salt} (${salt.length})`)
+    debug.decrypt(`version: ${version}`)
+    debug.decrypt(`authtag: ${authtag}`)
+    debug.decrypt(`encrypted: ${encrypted} (${encrypted.length})`)
 
     let decrypted = false
 
@@ -228,15 +175,22 @@ class Ciphering {
     decrypted = decipher.update(encrypted, 'hex', 'utf8')
     decrypted += decipher.final('utf8')
 
-    debug.decrypt(`${encrypted} -> ${decrypted} [${algorithm}]`)
+    debug.decrypt(`decrypted: ${decrypted}`)
 
-    try {
+    if (this.isJson(decrypted)) {
       decrypted = JSON.parse(decrypted)
-    } catch (e) {
-      // yoat
     }
 
     return decrypted
+  }
+
+  isJson(testjson) {
+    try {
+      testjson = JSON.parse(testjson)
+    } catch (e) {
+      return false
+    }
+    return true
   }
 
   async hasher(secret, salt, keylength) {
@@ -250,7 +204,8 @@ class Ciphering {
           {},
           {
             raw: true,
-            hashLength: keylength
+            hashLength: keylength,
+            salt: Buffer.from(salt)
           },
           this.kdf.options
         )
