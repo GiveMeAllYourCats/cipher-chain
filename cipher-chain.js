@@ -94,7 +94,7 @@ class Ciphering {
       pbkdf2: {
         name: 'pbkdf2',
         options: {
-          rounds: 10000,
+          rounds: 20000,
           hash: 'sha512'
         }
       },
@@ -112,6 +112,10 @@ class Ciphering {
     this.kdf = this.kdfs['pbkdf2']
     if (_.get(options, 'kdf')) {
       this.kdf = this.kdfs[options.kdf]
+    }
+
+    if (_.get(options, 'options')) {
+      this.kdf.options = _.merge({}, this.kdf.options, options.options)
     }
 
     if (!this.kdf) {
@@ -255,13 +259,5 @@ class Ciphering {
     }
   }
 }
-
-;(async () => {
-  const ciphering = new Ciphering('uber secret')
-
-  // Encrypt/Decrypt individually
-  let encrypted = await ciphering.encrypt({ yeet: 123 }, ['aes-256-gcm', 'cast5-cbc', 'aria-192-gcm'])
-  let decrypted = await ciphering.decrypt(encrypted)
-})()
 
 module.exports = Ciphering

@@ -4,7 +4,14 @@ const path = require('path')
 const cipherChain = require('../../cipher-chain')
 const _ = require('lodash')
 
-const ciphering = new cipherChain('secretje')
+const ciphering = new cipherChain({
+  secret: 'secretje',
+  kdf: 'pbkdf2',
+  options: {
+    rounds: 10,
+    hash: 'sha512'
+  }
+})
 
 describe('algorithm testing', function() {
   for (let cipher in ciphering.ciphers) {
@@ -12,6 +19,10 @@ describe('algorithm testing', function() {
       let encrypted = await ciphering.encrypt('secret data', cipher)
       let decrypted = await ciphering.decrypt(encrypted)
       assert.equal(decrypted, 'secret data')
+
+      encrypted = await ciphering.encrypt({ secret: true }, cipher)
+      decrypted = await ciphering.decrypt(encrypted)
+      assert.deepEqual(decrypted, { secret: true })
     })
   }
 })
@@ -37,6 +48,10 @@ describe('chaining testing', function() {
       let encrypted = await ciphering.encrypt('secret data', chain)
       let decrypted = await ciphering.decrypt(encrypted)
       assert.equal(decrypted, 'secret data')
+
+      encrypted = await ciphering.encrypt({ secret: true }, chain)
+      decrypted = await ciphering.decrypt(encrypted)
+      assert.deepEqual(decrypted, { secret: true })
     })
   }
 })

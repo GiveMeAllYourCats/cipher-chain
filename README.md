@@ -28,6 +28,14 @@ const Cipher = require('cipher-chain')
 
 // First create the object with a chosen secret
 const cipherChain = new Cipher('uber secret')
+// Or
+const cipherChain = new cipherChain({
+  secret: 'uber secret',
+  kdf: 'pbkdf2', // or argon2 (but not supported yet!)
+  options: { // options for the kdf function
+    rounds: 40000, // Default 20000
+    hash: 'sha512'
+  }
 
 // You can choose to encrypt and decrypt with just one cipher
 let encrypted = await ciphering.encrypt('secret data', 'aes-256-gcm')
