@@ -1,5 +1,6 @@
 const crypto = require('crypto')
 const _ = require('lodash')
+const isBase64 = require('is-base64')
 const argon2 = require('argon2')
 
 const ciphers = require('./ciphers.js')
@@ -9,7 +10,8 @@ const debug = {
   decrypt: require('debug')('cipherchain:decrypt'),
   chainDecrypt: require('debug')('cipherchain:chain:decrypt'),
   chainEncrypt: require('debug')('cipherchain:chain:encrypt'),
-  warning: require('debug')('cipherchain:warning')
+  warning: require('debug')('cipherchain:warning'),
+  test: require('debug')('cipherchain:test')
 }
 
 class Ciphering {
@@ -22,6 +24,14 @@ class Ciphering {
     this.version = 1
     this.chain = false
     this.ciphers = ciphers
+    this.saltLength = 6
+    if (_.get(options, 'saltLength')) {
+      this.saltLength = parseInt(options.saltLength)
+    }
+    this.salt = false
+    if (_.get(options, 'salt')) {
+      this.salt = options.salt
+    }
 
     this.kdfs = {
       pbkdf2: {
@@ -51,7 +61,16 @@ class Ciphering {
     }
 
     if (!this.kdf) {
-      throw new Error(`${options.kdf} is not a valid hashing algorithm`)
+      if (!crypto.getHashes().includes(options.kdf)) {
+        throw new Error(`${options.kdf} is not a valid hashing method`)
+      } else {
+        if (!_.get(this.kdfs, options.kdf)) {
+          this.kdfs[options.kdf] = {
+            name: options.kdf
+          }
+          this.kdf = this.kdfs[options.kdf]
+        }
+      }
     }
   }
 
@@ -106,7 +125,7 @@ class Ciphering {
       return await this.chainEncrypt(plaintext)
     }
 
-    const salt = this.generateSalt(16)
+    const salt = this.generateSalt(this.saltLength)
     const iv = this.generateSalt(this.ciphers[algorithm].iv)
     const secret = await this.hasher(this.secret, salt, this.ciphers[algorithm].key)
 
@@ -138,18 +157,34 @@ class Ciphering {
   }
 
   async decrypt(encrypted) {
-    if (this.chain) {
-      if (!this.decryptChainInProgress) {
-        this.decryptChainInProgress = true
-        const result = await this.chainDecrypt(encrypted)
-        this.chain = false
-        this.decryptChainInProgress = false
-        return result
-      }
+    if (this.chain && !this.decryptChainInProgress) {
+      this.decryptChainInProgress = true
+      const result = await this.chainDecrypt(encrypted)
+      this.chain = false
+      this.decryptChainInProgress = false
+      return result
     }
-    const decryptionObject = Buffer.from(encrypted, 'base64')
-      .toString('utf8')
-      .split(':')
+
+    let decryptionObject
+    if (isBase64(encrypted, { allowEmpty: false })) {
+      decryptionObject = Buffer.from(encrypted, 'base64')
+    }
+
+    decryptionObject = decryptionObject.toString('utf8')
+
+    if (typeof decryptionObject !== 'string') {
+      throw new Error(`integrity error (error: #1)`)
+    }
+
+    if (decryptionObject.indexOf(':') === -1) {
+      throw new Error(`integrity error (error: #2)`)
+    }
+
+    decryptionObject = decryptionObject.split(':')
+
+    if (decryptionObject.length !== 6) {
+      throw new Error(`integrity error (error: #3)`)
+    }
 
     const version = decryptionObject[0] // In the future with updates, can do something with version
     const algorithm = decryptionObject[1]
@@ -173,7 +208,16 @@ class Ciphering {
       decipher.setAuthTag(Buffer.from(authtag, 'hex'))
     }
     decrypted = decipher.update(encrypted, 'hex', 'utf8')
-    decrypted += decipher.final('utf8')
+
+    try {
+      decrypted += decipher.final('utf8')
+    } catch (e) {
+      if (e.code === 'ERR_OSSL_EVP_BAD_DECRYPT') {
+        throw new Error('Decryption failed, possible due to wrong secret or salt')
+      } else {
+        throw new Error(e)
+      }
+    }
 
     debug.decrypt(`decrypted: ${decrypted}`)
 
@@ -211,6 +255,14 @@ class Ciphering {
         )
       )
       return argon2output.toString('hex')
+    } else {
+      const hash = crypto
+        .createHash(this.kdf.name)
+        .update(`${salt}:${secret}`)
+        .digest('hex')
+        .slice(0, keylength * 2)
+
+      return hash
     }
   }
 }

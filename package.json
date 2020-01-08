@@ -1,6 +1,6 @@
 {
   "name": "cipher-chain",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Encrypting and decrypting your data in chains made easy!",
   "main": "cipher-chain.js",
   "scripts": {
@@ -52,6 +52,7 @@
   "dependencies": {
     "argon2": "^0.25.1",
     "debug": "^4.1.1",
+    "is-base64": "^1.0.0",
     "lodash": "^4.17.15"
   },
   "devDependencies": {
