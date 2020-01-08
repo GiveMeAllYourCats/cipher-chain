@@ -24,7 +24,7 @@ class Ciphering {
     this.version = 1
     this.chain = false
     this.ciphers = ciphers
-    this.saltLength = 6
+    this.saltLength = 4
     if (_.get(options, 'saltLength')) {
       this.saltLength = parseInt(options.saltLength)
     }
