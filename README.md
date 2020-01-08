@@ -12,12 +12,10 @@
 [![Node version](https://img.shields.io/node/v/cipher-chain.svg)](https://www.npmjs.com/package/cipher-chain)
 [![Help us and star this project](https://img.shields.io/github/stars/michaeldegroot/cipher-chain.svg?style=social)](https://github.com/michaeldegroot/cipher-chain)
 
-blablablablabla bal lbabl abl albalbla<br>
-`cipher-chain` lbalbal blab labl lab `blablabl` blablalba
+Encrypting and decrypting your data in chains made easy!<br>
+`cipher-chain` use nodejs her own `crypto` library to ensure security and stability across the board
 
 ## Installation
-
-balbal
 
 ```bash
 npm install cipher-chain --save
