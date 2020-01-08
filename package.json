@@ -1,6 +1,6 @@
 {
   "name": "cipher-chain",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Encrypting and decrypting your data in chains made easy!",
   "main": "cipher-chain.js",
   "scripts": {
@@ -10,13 +10,14 @@
     "coveralls:export": "nyc report --reporter=text-lcov | coveralls"
   },
   "keywords": [
-    "log",
-    "event",
-    "trigger",
-    "stream",
-    "tail",
-    "watch",
-    "action"
+    "encrypt",
+    "decrypt",
+    "cipher",
+    "chain",
+    "chaining",
+    "encryption",
+    "cipherchain",
+    "cipher-chain"
   ],
   "husky": {
     "hooks": {
