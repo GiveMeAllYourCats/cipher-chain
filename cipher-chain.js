@@ -27,7 +27,7 @@ class Ciphering {
       pbkdf2: {
         name: 'pbkdf2',
         options: {
-          rounds: 20000,
+          rounds: 10000,
           hash: 'sha512'
         }
       },
@@ -36,7 +36,7 @@ class Ciphering {
         options: {
           type: argon2.argon2i,
           timeCost: 3,
-          memoryCost: 1 << 12
+          memoryCost: 1024
         }
       }
     }

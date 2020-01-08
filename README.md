@@ -80,5 +80,5 @@ let decrypted = await cipherChain.decrypt(encrypted)
 
 ## License
 
-Copyright (c) 2019 by [GiveMeAllYourCats](https://github.com/michaeldegroot). Some rights reserved.<br>
+Copyright (c) 2020 by [GiveMeAllYourCats](https://github.com/michaeldegroot). Some rights reserved.<br>
 [cipher-chain](https://github.com/michaeldegroot/cipher-chain) is licensed under the MIT License as stated in the [LICENSE file](https://github.com/michaeldegroot/cipher-chain/blob/master/LICENSE).
