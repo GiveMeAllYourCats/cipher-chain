@@ -1,9 +1,9 @@
 const crypto = require('crypto')
 const _ = require('lodash')
-const isBase64 = require('is-base64')
+const isBase64 = string => {
+  return /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/.test(string)
+}
 const argon2 = require('argon2')
-
-const ciphers = require('./ciphers.js')
 
 const debug = {
   encrypt: require('debug')('cipherchain:encrypt'),
@@ -23,11 +23,15 @@ class Ciphering {
     }
     this.version = 1
     this.chain = false
-    this.ciphers = ciphers
     this.saltLength = 4
     if (_.get(options, 'saltLength')) {
       this.saltLength = parseInt(options.saltLength)
     }
+
+    this.ciphersList = false
+    require('./ciphers.js')().then(list => {
+      this.ciphersList = list
+    })
 
     this.kdfs = {
       pbkdf2: {
@@ -40,7 +44,7 @@ class Ciphering {
       argon2: {
         name: 'argon2',
         options: {
-          type: argon2.argon2i,
+          type: 'argon2i',
           timeCost: 3,
           memoryCost: 1024
         }
@@ -50,10 +54,6 @@ class Ciphering {
     this.kdf = this.kdfs.argon2
     if (_.get(options, 'kdf')) {
       this.kdf = this.kdfs[options.kdf]
-    }
-
-    if (_.get(options, 'options')) {
-      this.kdf.options = _.merge({}, this.kdf.options, options.options)
     }
 
     if (!this.kdf) {
@@ -68,6 +68,15 @@ class Ciphering {
         }
       }
     }
+
+    if (this.kdf.name === 'argon2') {
+      if (!eval(`argon2.${this.kdf.options.type}`)) {
+        throw new Error(`${this.kdf.options.type} is not a valid argon2 type`)
+      }
+      this.kdf.options.type = eval(`argon2.${this.kdf.options.type}`)
+    }
+
+    this.kdf.options = _.merge({}, this.kdf.options, _.get(options, 'options', {}))
   }
 
   generateSalt(amount) {
@@ -92,6 +101,17 @@ class Ciphering {
     }
 
     return decrypted
+  }
+
+  async ready() {
+    return new Promise((resolve, reject) => {
+      this.readyCheck = setInterval(() => {
+        if (this.ciphersList) {
+          clearInterval(this.readyCheck)
+          return resolve()
+        }
+      })
+    })
   }
 
   async chainEncrypt(plaintext) {
@@ -121,15 +141,23 @@ class Ciphering {
       return await this.chainEncrypt(plaintext)
     }
 
+    if (!this.ciphersList[algorithm]) {
+      throw new Error('Data not ready, please write "await cipherchaininstance.ready()" after instance creation')
+    }
+
     const salt = this.generateSalt(this.saltLength)
-    const iv = this.generateSalt(this.ciphers[algorithm].iv)
-    const secret = await this.hasher(this.secret, salt, this.ciphers[algorithm].key)
+    const iv = this.generateSalt(this.ciphersList[algorithm].iv)
+    const secret = await this.hasher(this.secret, salt, this.ciphersList[algorithm].key)
 
     debug.encrypt(`-- Encrypt: ${algorithm} --`)
     debug.encrypt(`iv: ${iv} (${iv.length})`)
     debug.encrypt(`secret: ${secret} (${secret.length})`)
     debug.encrypt(`hashsalt: ${salt} (${salt.length})`)
-    const cipher = crypto.createCipheriv(algorithm, secret, iv)
+    let options = {}
+    if (_.get(this.ciphersList[algorithm], 'authTagLength') !== false) {
+      options.authTagLength = this.ciphersList[algorithm].authTagLength
+    }
+    const cipher = crypto.createCipheriv(algorithm, secret, iv, options)
     let encrypted = cipher.update(plaintext, 'utf8', 'hex')
     encrypted += cipher.final('hex')
 
@@ -188,7 +216,7 @@ class Ciphering {
     const iv = decryptionObject[3]
     const authtag = decryptionObject[4]
     encrypted = decryptionObject[5]
-    const secret = await this.hasher(this.secret, salt, this.ciphers[algorithm].key)
+    const secret = await this.hasher(this.secret, salt, this.ciphersList[algorithm].key)
     debug.decrypt(`-- Decrypt: ${algorithm} --`)
     debug.decrypt(`iv: ${iv} (${iv.length})`)
     debug.decrypt(`secret: ${secret} (${secret.length})`)
@@ -199,7 +227,11 @@ class Ciphering {
 
     let decrypted = false
 
-    const decipher = crypto.createDecipheriv(algorithm, secret, iv)
+    let options = {}
+    if (_.get(this.ciphersList[algorithm], 'authTagLength') !== false) {
+      options.authTagLength = this.ciphersList[algorithm].authTagLength
+    }
+    const decipher = crypto.createDecipheriv(algorithm, secret, iv, options)
     if (authtag != 0) {
       decipher.setAuthTag(Buffer.from(authtag, 'hex'))
     }

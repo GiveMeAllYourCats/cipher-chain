@@ -154,6 +154,8 @@ describe(`cryptographical integrity `, function() {
         rounds: 1
       }
     })
+    await instance1.ready()
+    await instance2.ready()
     let instance1Encryption = await instance1.encrypt('secret data', 'aes-256-gcm')
     let instance2Decryption = await instance2.decrypt(instance1Encryption)
     assert.equal(instance2Decryption, 'secret data')
@@ -187,8 +189,9 @@ describe(`cryptographical integrity `, function() {
   // })
 })
 
-describe(`algorithm integrity`, function() {
-  for (let ciphername in cipheringPbkdf2.ciphers) {
+describe(`algorithm integrity`, async function() {
+  await cipheringPbkdf2.ready()
+  for (let ciphername in cipheringPbkdf2.ciphersList) {
     it(`${ciphername}`, async () => {
       let encrypted = await cipheringPbkdf2.encrypt('secret data', ciphername)
       let decrypted = await cipheringPbkdf2.decrypt(encrypted)

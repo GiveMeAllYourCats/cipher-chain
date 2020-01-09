@@ -13,7 +13,7 @@
 [![Help us and star this project](https://img.shields.io/github/stars/michaeldegroot/cipher-chain.svg?style=social)](https://github.com/michaeldegroot/cipher-chain)
 
 Encrypting and decrypting your data in chains made easy!<br>
-`cipher-chain` use nodejs her own `crypto` library to ensure security and stability across the board
+`cipher-chain` uses nodejs's `crypto` library to ensure security and stability across the board, standardly using Argon2i for key derivation function
 
 ## Installation
 
@@ -23,47 +23,60 @@ npm install cipher-chain --save
 
 ## How it works
 
-<p align="center"><img src="https://i.imgur.com/7mnOF4Y.png" /></p>
+[![flowchart](https://i.imgur.com/7mnOF4Y.png)](https://i.imgur.com/7mnOF4Y.png)
 
 ## Usage
 
 ```js
 const Cipher = require('cipher-chain')
 
-// First create the object with a chosen secret
-const cipherChain = new Cipher('uber secret') /// this will use default options settings
-// Or
-const cipherChain = new cipherChain({
-  secret: 'uber secret',
-  kdf: 'argon2', // or pbkdf2
-  options: { // options for the kdf function, in this case argon2
-	  timeCost: 6,
-	  memoryCost: 1024 * 4,
-	  parallelism: 1,
-  }
+const start = async() => {
+	// First create the object with a chosen secret
+	const cipherChain = new Cipher('uber secret') /// this will use default options settings
+	// Or
+	const cipherChain = new cipherChain({
+	  secret: 'uber secret',
+	  kdf: 'argon2', // or pbkdf2
+	  options: { // options for the kdf function, in this case argon2
+		  timeCost: 6,
+		  memoryCost: 1024 * 4,
+		  parallelism: 1,
+	  }
 
-// You can choose to encrypt and decrypt with just one cipher
-let encrypted = await cipherChain.encrypt('secret data', 'aes-256-gcm')
-let decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
+	// Then wait for the instance to ready pre-loading
+	await cipherChain.ready()
 
-// You can also encrypt objects/arrays instead of strings
-encrypted = await cipherChain.encrypt({ secretdata: true }, 'aes-256-gcm')
-decrypted = await cipherChain.decrypt(encrypted) // returns: { secretdata: true }
+	// You can then choose to encrypt and decrypt with just one cipher
+	let encrypted = await cipherChain.encrypt('secret data', 'aes-256-gcm')
+	let decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
 
-// Or chain encrypt/decrypt, here doing a three-pass encryption starting from aes-256-gcm to aes-128-ctr and lastly to bf-cbc
-encrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'aes-128-ctr', 'bf-cbc'])
-decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
+	// You can also encrypt objects/arrays instead of strings
+	encrypted = await cipherChain.encrypt({ secretdata: true }, 'aes-256-gcm')
+	decrypted = await cipherChain.decrypt(encrypted) // returns: { secretdata: true }
+
+	// Or chain encrypt/decrypt, here doing a three-pass encryption starting from aes-256-gcm to aes-128-ctr and lastly to bf-cbc
+	encrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'aes-128-ctr', 'bf-cbc'])
+	decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
+}
+
+start()
 ```
 
 ## Api
 
-#### cipherChain.ciphers()
+#### cipherChain.ready()
 
-_Gets a list of all availible ciphers to work with_
+_Returns a promise and fulfills it when `cipher-chain` is ready for action_
+
+**IMPORTANT** call all functions after you have done `await cipherChain.ready()`
+
+#### cipherChain.cipherList
+
+_Gets a list of all available ciphers to work with_
 
 #### cipherChain.encrypt(data:[any], encryptionChain:[array, string])
 
-_Encrypts a plaintext string, object, number or array to a cipher-chain encrypted string_
+_Encrypts a plaintext string, object, number or array to a `cipher-chain` encrypted string_
 
 **example:**
 
@@ -74,7 +87,7 @@ let chainEncrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'b
 
 #### cipherChain.decrypt(encrypted:string)
 
-_Decrypts a given cipher-chain string, will try to return as a object if it can be one_
+_Decrypts a given `cipher-chain` string, will try to return as a object if it can be one_
 
 **example:**
 
