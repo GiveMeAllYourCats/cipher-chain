@@ -23,6 +23,7 @@ class Ciphering {
     }
     this.version = 1
     this.chain = false
+    this.isReady = false
     this.saltLength = 4
     if (_.get(options, 'saltLength')) {
       this.saltLength = parseInt(options.saltLength)
@@ -104,11 +105,15 @@ class Ciphering {
   }
 
   async ready() {
+    if (this.isReady) {
+      return true
+    }
     return new Promise((resolve, reject) => {
       this.readyCheck = setInterval(() => {
-        if (this.ciphersList) {
+        if (typeof this.ciphersList == 'object') {
           clearInterval(this.readyCheck)
-          return resolve()
+          this.isReady = true
+          return resolve(true)
         }
       })
     })
@@ -141,8 +146,12 @@ class Ciphering {
       return await this.chainEncrypt(plaintext)
     }
 
-    if (!this.ciphersList[algorithm]) {
+    if (!this.isReady) {
       throw new Error('Data not ready, please write "await cipherchaininstance.ready()" after instance creation')
+    }
+
+    if (!this.ciphersList[algorithm]) {
+      throw new Error(`Cannot find cipher algorithm: ${algorithm}`)
     }
 
     const salt = this.generateSalt(this.saltLength)
@@ -172,6 +181,8 @@ class Ciphering {
       }
     }
 
+    algorithm = this.ciphersList[algorithm].id
+
     const protocolString = `${this.version}:${algorithm}:${salt}:${iv}:${authtag}:${encrypted}`
     const result = Buffer.from(protocolString).toString('base64')
     debug.encrypt(`plaintext: ${plaintext}`)
@@ -187,6 +198,10 @@ class Ciphering {
       this.chain = false
       this.decryptChainInProgress = false
       return result
+    }
+
+    if (!this.isReady) {
+      throw new Error('Data not ready, please write "await cipherchaininstance.ready()" after instance creation')
     }
 
     let decryptionObject
@@ -211,13 +226,20 @@ class Ciphering {
     }
 
     const version = decryptionObject[0] // In the future with updates, can do something with version
-    const algorithm = decryptionObject[1]
+    let algorithm = _.find(this.ciphersList, o => {
+      return o.id == decryptionObject[1]
+    })
+
+    if (!algorithm) {
+      throw new Error(`Cannot find cipher algorithm with id: ${decryptionObject[1]}`)
+    }
+
     const salt = decryptionObject[2]
     const iv = decryptionObject[3]
     const authtag = decryptionObject[4]
     encrypted = decryptionObject[5]
-    const secret = await this.hasher(this.secret, salt, this.ciphersList[algorithm].key)
-    debug.decrypt(`-- Decrypt: ${algorithm} --`)
+    const secret = await this.hasher(this.secret, salt, algorithm.key)
+    debug.decrypt(`-- Decrypt: ${algorithm.cipher} --`)
     debug.decrypt(`iv: ${iv} (${iv.length})`)
     debug.decrypt(`secret: ${secret} (${secret.length})`)
     debug.decrypt(`hashsalt: ${salt} (${salt.length})`)
@@ -228,10 +250,10 @@ class Ciphering {
     let decrypted = false
 
     let options = {}
-    if (_.get(this.ciphersList[algorithm], 'authTagLength') !== false) {
-      options.authTagLength = this.ciphersList[algorithm].authTagLength
+    if (_.get(algorithm, 'authTagLength') !== false) {
+      options.authTagLength = algorithm.authTagLength
     }
-    const decipher = crypto.createDecipheriv(algorithm, secret, iv, options)
+    const decipher = crypto.createDecipheriv(algorithm.cipher, secret, iv, options)
     if (authtag != 0) {
       decipher.setAuthTag(Buffer.from(authtag, 'hex'))
     }

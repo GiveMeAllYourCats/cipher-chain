@@ -1,14 +1,15 @@
 const crypto = require('crypto')
 const os = require('os')
 const path = require('path')
+const packagejson = require('./package.json')
 const debug = require('debug')('cipherchain:ciphers')
 
-const cachefile = path.join(os.tmpdir(), 'cipherchain.json')
+const cachefile = path.join(os.tmpdir(), `cipherchain_v${packagejson.version.split('.').join('-')}.json`)
 let ciphers = false
 
 const cache = require('node-file-cache').create({
   file: cachefile,
-  life: 3600 * 24 * 1
+  life: 3600 * 24 * 365
 })
 
 const bytes = amount => {
@@ -88,11 +89,9 @@ module.exports = async () => {
       ciphers = {}
       let id = 0
       for (let cipher of crypto.getCiphers()) {
-        if (cipher === 'aes-256-cbc') {
-          continue
-        }
         const [key, iv, authTagLength] = await findKeyAndIv(cipher)
         ciphers[cipher] = {
+          cipher,
           key,
           iv,
           authTagLength,
@@ -104,8 +103,12 @@ module.exports = async () => {
     cache.set('ciphers', ciphers)
   }
 
+  if (!ciphers) {
+    throw new Error('failed building ciphers list (falsey)')
+  }
+
   if (typeof ciphers != 'object') {
-    throw new Error('failed building ciphers list')
+    throw new Error('failed building ciphers list (not object)')
   }
 
   if (ciphers.length <= 10) {

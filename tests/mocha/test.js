@@ -3,6 +3,20 @@ const _ = require('lodash')
 const crypto = require('crypto')
 const cipherChain = require('../../cipher-chain')
 
+const bannedCiphers = [
+  'aes-128-xts',
+  'aes-256-xts',
+  'aes-wrap',
+  'aes128-wrap',
+  'aes192-wrap',
+  'aes256-wrap',
+  'des3-wrap',
+  'id-aes128-wrap',
+  'id-aes192-wrap',
+  'id-aes256-wrap',
+  'id-smime-alg-CMS3DESwrap'
+]
+
 const cipheringPbkdf2 = new cipherChain({
   secret: 'default settings',
   kdf: 'pbkdf2',
@@ -53,6 +67,8 @@ describe(`kdf nodejs internal functions`, function() {
         kdf: hash
       })
 
+      await instance.ready()
+
       let hash1 = await instance.hasher('samesecret', 'samesalt', 16)
       const hash2 = await instance.hasher('samesecret', 'samesalt', 16)
       assert.equal(hash1, hash2)
@@ -80,6 +96,7 @@ describe(`kdf nodejs internal functions`, function() {
 
 describe(`kdf custom functions`, function() {
   it(`pbkdf2 proper output`, async () => {
+    await cipheringPbkdf2.ready()
     let hash = await cipheringPbkdf2.hasher('samesecret', 'samesalt', 16)
     const hash2 = await cipheringPbkdf2.hasher('samesecret', 'samesalt', 16)
     assert.equal(hash, hash2)
@@ -103,6 +120,7 @@ describe(`kdf custom functions`, function() {
     assert.equal(decrypted, 'secret data')
   })
   it(`argon2 proper output`, async () => {
+    await cipheringArgon.ready()
     let hash = await cipheringArgon.hasher('samesecret', 'samesalt', 16)
     const hash2 = await cipheringArgon.hasher('samesecret', 'samesalt', 16)
     assert.equal(hash, hash2)
@@ -131,6 +149,8 @@ describe(`cryptographical integrity `, function() {
   it(`proper salt generation length for both kdf functions`, async () => {
     assert.equal(16 * 2, cipheringPbkdf2.generateSalt(16).length)
     assert.equal(16 * 2, cipheringArgon.generateSalt(16).length)
+
+    return true
   })
   it(`salts must be generated randomly`, async () => {
     let newSalt = cipheringPbkdf2.generateSalt(16)
@@ -138,6 +158,8 @@ describe(`cryptographical integrity `, function() {
     newSalt = cipheringPbkdf2.generateSalt(16)
 
     assert.notEqual(newSalt, oldSalt)
+
+    return true
   })
   it(`different cipher-chain instances but same options should be able to decrypt both data identically`, async () => {
     const instance1 = new cipherChain({
@@ -159,6 +181,8 @@ describe(`cryptographical integrity `, function() {
     let instance1Encryption = await instance1.encrypt('secret data', 'aes-256-gcm')
     let instance2Decryption = await instance2.decrypt(instance1Encryption)
     assert.equal(instance2Decryption, 'secret data')
+
+    return true
   })
   it(`two encrypted results with the same secret and different salt should be unique`, async () => {
     let newHash = await cipheringPbkdf2.encrypt('secret data', 'aes-256-ctr')
@@ -172,31 +196,23 @@ describe(`cryptographical integrity `, function() {
     newHash = await cipheringArgon.encrypt('secret data', 'aes-256-ctr')
 
     assert.notEqual(newHash, oldHash)
+
+    return true
   })
-  // it(`two encrypted results with the same secret and same salt should be identical`, async () => {
-  //   let newHash = await cipheringPbkdf2SaltTest.encrypt('secret data', 'aes-256-gcm')
-  //   let oldHash = newHash
-  //   newHash = await cipheringPbkdf2SaltTest.encrypt('secret data', 'aes-256-gcm')
-  //   console.log(` >>>>>> ${cipheringPbkdf2SaltTest.salt}`)
-
-  //   assert.equal(newHash, oldHash)
-
-  //   newHash = await cipheringArgonSaltTest.encrypt('secret data', 'aes-256-gcm')
-  //   oldHash = newHash
-  //   newHash = await cipheringArgonSaltTest.encrypt('secret data', 'aes-256-gcm')
-
-  //   assert.equal(newHash, oldHash)
-  // })
 })
 
-describe(`algorithm integrity`, async function() {
-  await cipheringPbkdf2.ready()
-  for (let ciphername in cipheringPbkdf2.ciphersList) {
+describe(`algorithm integrity`, function() {
+  for (let ciphername of crypto.getCiphers()) {
+    if (bannedCiphers.includes(ciphername)) {
+      continue
+    }
     it(`${ciphername}`, async () => {
+      await cipheringPbkdf2.ready()
       let encrypted = await cipheringPbkdf2.encrypt('secret data', ciphername)
       let decrypted = await cipheringPbkdf2.decrypt(encrypted)
       assert.equal(decrypted, 'secret data')
 
+      await cipheringArgon.ready()
       encrypted = await cipheringArgon.encrypt('secret data', ciphername)
       decrypted = await cipheringArgon.decrypt(encrypted)
       assert.equal(decrypted, 'secret data')
@@ -208,6 +224,8 @@ describe(`algorithm integrity`, async function() {
       encrypted = await cipheringArgon.encrypt({ secret: true }, ciphername)
       decrypted = await cipheringArgon.decrypt(encrypted)
       assert.deepEqual(decrypted, { secret: true })
+
+      return true
     })
   }
 })
@@ -218,7 +236,10 @@ describe(`algorithm chain integrity`, function() {
   const cipherperpart = 4
   let ciphercount = 0
   let tempchain = []
-  for (let ciphername in cipheringPbkdf2.ciphers) {
+  for (let ciphername of crypto.getCiphers()) {
+    if (bannedCiphers.includes(ciphername)) {
+      continue
+    }
     tempchain.push(ciphername)
     ciphercount++
     if (cipherperpart == ciphercount) {
@@ -235,10 +256,12 @@ describe(`algorithm chain integrity`, function() {
 
   for (let chain of chains) {
     it(chain.join(' -> '), async () => {
+      await cipheringPbkdf2.ready()
       let encrypted = await cipheringPbkdf2.encrypt('secret data', chain)
       let decrypted = await cipheringPbkdf2.decrypt(encrypted)
       assert.equal(decrypted, 'secret data')
 
+      await cipheringArgon.ready()
       encrypted = await cipheringArgon.encrypt('secret data', chain)
       decrypted = await cipheringArgon.decrypt(encrypted)
       assert.equal(decrypted, 'secret data')
@@ -250,6 +273,8 @@ describe(`algorithm chain integrity`, function() {
       encrypted = await cipheringArgon.encrypt({ secret: true }, chain)
       decrypted = await cipheringArgon.decrypt(encrypted)
       assert.deepEqual(decrypted, { secret: true })
+
+      return true
     })
   }
 })
