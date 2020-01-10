@@ -1,9 +1,9 @@
 const crypto = require('crypto')
+const path = require('path')
+const fs = require('fs')
 const _ = require('lodash')
-const isBase64 = string => {
-  return /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/.test(string)
-}
 const argon2 = require('argon2')
+const base64regex = new RegExp('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$')
 
 const debug = {
   encrypt: require('debug')('cipherchain:encrypt'),
@@ -21,6 +21,24 @@ class Ciphering {
     } else {
       this.secret = options.secret
     }
+
+    this.secretFile = path.join(this.secret, 'cipher-chain.key')
+    let isSecretDir = false
+    try {
+      isSecretDir = fs.lstatSync(this.secret).isDirectory()
+    } catch (e) {}
+    if (isSecretDir) {
+      if (!fs.existsSync(this.secretFile)) {
+        this.secret = crypto.randomBytes(4096).toString('hex')
+        fs.writeFileSync(this.secretFile, this.secret)
+      } else {
+        this.secret = fs
+          .readFileSync(this.secretFile)
+          .toString('utf8')
+          .replace(/\s/g, '')
+      }
+    }
+
     this.version = 1
     this.chain = false
     this.isReady = false
@@ -85,20 +103,22 @@ class Ciphering {
   }
 
   async chainDecrypt(encrypted) {
-    const chain = this.chain.reverse()
-
     let decrypted = encrypted
     let decryptedBefore = encrypted
+    let chainNotEmpty = true
 
-    for (let algorithm of chain) {
+    while (chainNotEmpty) {
       decryptedBefore = encrypted
-      decrypted = await this.decrypt(decrypted, algorithm)
+      decrypted = await this.decrypt(decrypted)
 
-      let printdecrypted = decrypted
+      let printdecrypted
       if (typeof decrypted === 'object') {
         printdecrypted = JSON.stringify(decrypted)
       }
       debug.chainDecrypt(`${decryptedBefore} -> ${printdecrypted}`)
+      if (base64regex.test(decrypted) === false) {
+        chainNotEmpty = false
+      }
     }
 
     return decrypted
@@ -147,7 +167,7 @@ class Ciphering {
     }
 
     if (!this.isReady) {
-      throw new Error('Data not ready, please write "await cipherchaininstance.ready()" after instance creation')
+      throw new Error('cipher-chain is not ready, please write "await cipherchaininstance.ready()" after instance creation')
     }
 
     if (!this.ciphersList[algorithm]) {
@@ -201,13 +221,10 @@ class Ciphering {
     }
 
     if (!this.isReady) {
-      throw new Error('Data not ready, please write "await cipherchaininstance.ready()" after instance creation')
+      throw new Error('cipher-chain is not ready, please write "await cipherchaininstance.ready()" after instance creation')
     }
 
-    let decryptionObject
-    if (isBase64(encrypted, { allowEmpty: false })) {
-      decryptionObject = Buffer.from(encrypted, 'base64')
-    }
+    let decryptionObject = Buffer.from(encrypted, 'base64').toString('utf8')
 
     decryptionObject = decryptionObject.toString('utf8')
 
