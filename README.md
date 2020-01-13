@@ -12,8 +12,7 @@
 [![Node version](https://img.shields.io/node/v/cipher-chain.svg)](https://www.npmjs.com/package/cipher-chain)
 [![Help us and star this project](https://img.shields.io/github/stars/michaeldegroot/cipher-chain.svg?style=social)](https://github.com/michaeldegroot/cipher-chain)
 
-Encrypting and decrypting your data in chains made easy!<br>
-`cipher-chain` uses nodejs's `crypto` library to ensure security and stability across the board, standardly using Argon2i for key derivation function
+Symmetric encryption and decryption of string(s) or file(s) protected via a `secret` string or `secretFile`
 
 ## Installation
 
@@ -23,40 +22,105 @@ npm install cipher-chain --save
 
 ## How it works
 
-[![flowchart](https://i.imgur.com/7mnOF4Y.png)](https://i.imgur.com/7mnOF4Y.png)
+#### - Encrypting
+
+When creating a `cipher-chain` instance you are presented with some options, you can use a `secret` or use a `secretFile`, a `secretFile` is a computer generated 'key' if you will that is a unique signature representing your `secret`
+
+Secondly you will need to define a `chain`, this will be the path the encryption/decryption process goes through to get the encrypted and plaintext respectively. `chain`is a array with string representing all cipher algorithms. The cipher algorithm list can be viewed by calling `cipherchain.ciphers`
+
+When you create a `cipher-chain` instance the script goes through the `chain` list and for every algorithm it creates a kdf generated hashed key derived from the `secret` that matches the `key` length requirements for that particular cipher
+
+Then when you call the `cipherchain.encrypt` function it checks what the `chain` is and will convert your `plaintext` to `ciphertext` via traversal of the `chain` list.
+
+So if you have a `chain` value of `['aes-256-gcm', 'aes-192-gcm', 'camellia-256-cbc']`
+
+then the encryption process will be:
+
+_plaintext -> aes-256-gcm -> aes-192-gcm -> camellia-256-cbc -> ciphertext`_
+
+and decryption process will be:
+
+_ciphertext -> aes-256-gcm -> aes-192-gcm -> camellia-256-cbc -> plaintext`_
+
+After encryption chain end a `hmac` is computed of the end resulting `ciphertext` and before decryption chain start the hmac is compared (timings safe) against the end resulting `ciphertext` of that decryption process. If it not verifies a error is thrown
+
+For each algorithm encryption `chain` pass a random `initialization vector` is generated
+
+#### - Decrypting
+
+All encrypted strings have the same format and recgonisable by the starting prefix of `@CC2-` indicating its a cipher-chain version 2 string. They can look like this:
+
+`@CC2-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:0:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
+
+If you look closely you can see `:` being delimiters which will have the following result when split:
+
+first the `@CC2-` is removed internally when decrypting the string
+
+```js
+;[
+	'72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195',
+	'0',
+	'1',
+	'0',
+	'ab561e52d1e9c68d3d63c62952c0314f3c73ff0199657849ef20708af21a291e',
+	'3522e975157c2dc1',
+	'cbb83e90afeb9a3de67638502148c40b'
+]
+```
+
+The mapping for this format is as followed:
+
+`@CC2-[hmac]:[cipherAlgorithmId]:[autoPadding]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
+
+So we can conclude we have the following data when decrypting the string:
+
+```js
+const data = {
+	hmac: '72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195',
+	cipherAlgorithmId: '0',
+	autoPadding: '1',
+	authTag: '0',
+	kdfSalt: 'ab561e52d1e9c68d3d63c62952c0314f3c73ff0199657849ef20708af21a291e',
+	initializationVector: '3522e975157c2dc1',
+	encryptedData: 'cbb83e90afeb9a3de67638502148c40b'
+}
+```
+
+Cipher-chain knows this internally when trying to decrypt your strings. The only piece of the puzzle here to decrypt the `encryptedData` variable is if we know the `secret`
 
 ## Usage
 
 ```js
-const Cipher = require('cipher-chain')
+const CipherChain = require('cipher-chain')
 
-const start = async() => {
-	// First create the object with a chosen secret
-	const cipherChain = new Cipher('uber secret') /// this will use default options settings
-	// Or
-	const cipherChain = new cipherChain({
-	  secret: 'uber secret',
-	  kdf: 'argon2', // or pbkdf2
-	  options: { // options for the kdf function, in this case argon2
-		  timeCost: 6,
-		  memoryCost: 1024 * 4,
-		  parallelism: 1,
-	  }
+const start = async () => {
+	const cipherchain = await new CipherChain({
+		secret: 'very secret!',
+		kdf: 'argon2',
+		chain: ['aes-256-gcm', 'blowfish', 'camellia-256-cbc'],
+		options: {
+			argon2: {
+				timeCost: 6,
+				memoryCost: 1024 * 4,
+				parallelism: 1
+			}
+		}
+	})
 
-	// Then wait for the instance to ready pre-loading
-	await cipherChain.ready()
+	const ciphers = cipherchain.ciphers // List of cipher algorithms to use in your chain
+	const kdfs = cipherchain.kdfs // List of KDFs (key derivation function) to use
 
-	// You can then choose to encrypt and decrypt with just one cipher
-	let encrypted = await cipherChain.encrypt('secret data', 'aes-256-gcm')
-	let decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
+	// Encrypt/decrypt a string
+	const ciphertext = await cipherchain.encrypt('encrypt this')
+	const plaintext = await cipherchain.decrypt(ciphertext)
 
-	// You can also encrypt objects/arrays instead of strings
-	encrypted = await cipherChain.encrypt({ secretdata: true }, 'aes-256-gcm')
-	decrypted = await cipherChain.decrypt(encrypted) // returns: { secretdata: true }
+	// Encrypt/decrypt a file
+	await cipherchain.encryptFile('./file.txt')
+	await cipherchain.decryptFile('./file.txt')
 
-	// Or chain encrypt/decrypt, here doing a three-pass encryption starting from aes-256-gcm to aes-128-ctr and lastly to bf-cbc
-	encrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'aes-128-ctr', 'bf-cbc'])
-	decrypted = await cipherChain.decrypt(encrypted) // returns: secret data
+	// Encrypt/decrypt a directory
+	await cipherchain.encryptFile('./directory')
+	await cipherchain.decryptFile('./directory')
 }
 
 start()
@@ -64,35 +128,72 @@ start()
 
 ## Api
 
-#### cipherChain.ready()
-
-_Returns a promise and fulfills it when `cipher-chain` is ready for action_
-
-**IMPORTANT** call all functions after you have done `await cipherChain.ready()`
-
-#### cipherChain.cipherList
+#### cipherchain.ciphers
 
 _Gets a list of all available ciphers to work with_
 
-#### cipherChain.encrypt(data:[any], encryptionChain:[array, string])
+#### cipherchain.kdfs
 
-_Encrypts a plaintext string, object, number or array to a `cipher-chain` encrypted string_
+_Gets a list of all available KDFs to work with_
+
+#### cipherchain.encrypt(plaintext:[string])
+
+_Encrypts a plaintext to a ciphertext_
 
 **example:**
 
 ```js
-let encrypted = await cipherChain.encrypt('secret data', 'aes-256-gcm')
-let chainEncrypted = await cipherChain.encrypt('secret data', ['aes-256-gcm', 'bf-cbc', 'camellia-256-cbc'])
+let encrypted = await cipherchain.encrypt('secret data')
 ```
 
-#### cipherChain.decrypt(encrypted:string)
+#### cipherchain.decrypt(ciphertext:[string])
 
-_Decrypts a given `cipher-chain` string, will try to return as a object if it can be one_
+_Decrypts a ciphertext to a plaintext_
 
 **example:**
 
 ```js
-let decrypted = await cipherChain.decrypt(encrypted)
+let decrypted = await cipherchain.decrypt(encrypted)
+```
+
+#### cipherchain.encryptFile(filename:[path])
+
+_Encrypts a file_
+
+**example:**
+
+```js
+await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
+```
+
+#### cipherchain.decryptFile(filename:[path])
+
+_Decrypts a file_
+
+**example:**
+
+```js
+await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
+```
+
+#### cipherchain.encryptDirectory(directory:[path])
+
+_Encrypts a directory_
+
+**example:**
+
+```js
+await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
+```
+
+#### cipherchain.decryptDirectory(directory:[path])
+
+_Decrypts a directory_
+
+**example:**
+
+```js
+await cipherchain.decryptDirectory(path.join('../', 'encryptme'))
 ```
 
 ## License
