@@ -11,6 +11,8 @@ const _ = require('lodash')
 const glob = require('glob')
 const path = require('path')
 const argon2 = require('argon2')
+const asyncPool = require('tiny-async-pool')
+const version = require('./package.json').version.split('.')[0]
 
 class CipherChain {
   constructor(options) {
@@ -18,6 +20,7 @@ class CipherChain {
       // Setup instance options
       const standardKdfSettings = {
         use: 'argon2',
+        saltLength: 4,
         options: {
           argon2: {
             type: argon2.argon2i,
@@ -37,8 +40,8 @@ class CipherChain {
       this.autoPadding = _.get(options, 'autoPadding', true)
       this.doHmac = _.get(options, 'hmacVerify', true)
       this.secret = _.get(options, 'secret')
-      this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
       this.concurrentFiles = _.get(options, 'concurrentFiles', 100)
+      this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
 
       if (!_.get(options, 'chain')) {
         throw new Error('Must specify chain in instance options')
@@ -90,15 +93,17 @@ class CipherChain {
       hmac = await this.hmac(plaintext)
     }
 
-    return `@CC2-${hmac}:${plaintext}`
+    plaintext = `@CC${version}-${hmac}:${plaintext}`
+
+    return plaintext
   }
 
   async decrypt(encrypted) {
-    if (encrypted.slice(0, 5) != '@CC2-') {
-      throw new Error(`Not a encrypted cipher-chain string`)
+    if (encrypted.slice(0, 5) != `@CC${version}-`) {
+      throw new Error(`Not a encrypted cipher-chain version ${version} string`)
     }
 
-    encrypted = encrypted.replace('@CC2-', '')
+    encrypted = encrypted.replace(`@CC${version}-`, '')
     let encryptedMacCheck = encrypted.split(':')
     encryptedMacCheck.shift()
     encryptedMacCheck = encryptedMacCheck.join(':')
@@ -127,22 +132,24 @@ class CipherChain {
     }
     const files = glob.sync('**/*', { cwd: dirpatt })
     const filenames = []
-    const promises = files.map(async file => {
-      const data = await this.encrypt(file)
-      const hashedFilename = crypto
-        .createHmac('sha1', this.secret)
-        .update(file)
-        .digest('hex')
-      const fileToEncrypt = path.join(dirpatt, file)
-      filenames.push({
-        data,
-        hash: hashedFilename
+
+    const encryptFile = file =>
+      new Promise(async resolve => {
+        const data = await this.encrypt(file)
+        const hashedFilename = crypto
+          .createHmac('sha1', this.secret)
+          .update(file)
+          .digest('hex')
+        const fileToEncrypt = path.join(dirpatt, file)
+        filenames.push({
+          data,
+          hash: hashedFilename
+        })
+        await this.encryptFile(fileToEncrypt)
+        fs.renameSync(fileToEncrypt, path.join(dirpatt, hashedFilename))
+        return resolve()
       })
-      await this.encryptFile(fileToEncrypt)
-      fs.renameSync(fileToEncrypt, path.join(dirpatt, hashedFilename))
-      return true
-    })
-    await Promise.all(promises)
+    await asyncPool(this.concurrentFiles, files, encryptFile)
 
     fs.writeFileSync(cipherChainFile, JSON.stringify(filenames))
   }
@@ -152,19 +159,19 @@ class CipherChain {
     if (!fs.existsSync(cipherChainFile)) {
       throw new Error(`Directory '${dirpatt}' is not encrypted (.cipher-chain file not found!)`)
     }
-
     const filenames = JSON.parse(fs.readFileSync(cipherChainFile))
-    const promises = filenames.map(async filename => {
-      const fileToDecrypt = path.join(dirpatt, filename.hash)
-      if (fs.existsSync(fileToDecrypt)) {
-        await this.decryptFile(fileToDecrypt)
-        const newFilename = await this.decrypt(filename.data)
-        fs.renameSync(fileToDecrypt, path.join(dirpatt, newFilename))
-      }
 
-      return true
-    })
-    await Promise.all(promises)
+    const decryptFile = filename =>
+      new Promise(async resolve => {
+        const fileToDecrypt = path.join(dirpatt, filename.hash)
+        if (fs.existsSync(fileToDecrypt)) {
+          await this.decryptFile(fileToDecrypt)
+          const newFilename = await this.decrypt(filename.data)
+          fs.renameSync(fileToDecrypt, path.join(dirpatt, newFilename))
+        }
+        return resolve()
+      })
+    await asyncPool(this.concurrentFiles, filenames, decryptFile)
     fs.unlinkSync(cipherChainFile)
   }
 
@@ -281,28 +288,19 @@ class CipherChain {
   async generateSecret(secret, salt, keylength) {
     let hash
     const options = this.kdf.options[this.kdf.use]
+    if (!salt) {
+      salt = this.randomBytes(this.kdf.saltLength)
+    }
     if (this.kdf.use === 'pbkdf2') {
-      if (!salt) {
-        salt = this.randomBytes(32)
-      }
       hash = crypto.pbkdf2Sync(secret, salt, options.rounds, parseInt(keylength), options.hash).toString('hex')
     } else if (this.kdf.use === 'blake2') {
-      if (!salt) {
-        salt = this.randomBytes(32)
-      }
       hash = blake2
         .createHash('blake2b', { digestLength: keylength })
         .update(Buffer.from(`${secret}:${salt}`))
         .digest('hex')
     } else if (this.kdf.use === 'scrypt') {
-      if (!salt) {
-        salt = this.randomBytes(32)
-      }
       hash = crypto.scryptSync(secret, salt, keylength).toString('hex')
     } else if (this.kdf.use === 'argon2') {
-      if (!salt) {
-        salt = this.randomBytes(32)
-      }
       const argon2output = await argon2.hash(
         secret,
         _.merge(

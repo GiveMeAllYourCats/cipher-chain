@@ -55,7 +55,8 @@
     "blake2": "^4.0.0",
     "glob": "^7.1.6",
     "lodash": "^4.17.15",
-    "node-file-cache": "^1.0.2"
+    "node-file-cache": "^1.0.2",
+    "tiny-async-pool": "^1.1.0"
   },
   "devDependencies": {
     "benchmark": "^2.1.4",

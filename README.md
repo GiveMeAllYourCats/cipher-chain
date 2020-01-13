@@ -50,11 +50,11 @@ For each algorithm encryption `chain` pass a random `initialization vector` is g
 
 All encrypted strings have the same format and recgonisable by the starting prefix of `@CC2-` indicating its a cipher-chain version 2 string. They can look like this:
 
-`@CC2-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:0:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
+`@CC3-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:0:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
 
 If you look closely you can see `:` being delimiters which will have the following result when split:
 
-first the `@CC2-` is removed internally when decrypting the string
+first the `@CC3-` is removed internally when decrypting the string
 
 ```js
 ;[
@@ -70,7 +70,7 @@ first the `@CC2-` is removed internally when decrypting the string
 
 The mapping for this format is as followed:
 
-`@CC2-[hmac]:[cipherAlgorithmId]:[autoPadding]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
+`@CC[majorVersioNumberCipherChain]-[hmac]:[cipherAlgorithmId]:[autoPadding]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
 
 So we can conclude we have the following data when decrypting the string:
 
@@ -89,6 +89,120 @@ const data = {
 Cipher-chain knows this internally when trying to decrypt your strings. The only piece of the puzzle here to decrypt the `encryptedData` variable is if we know the `secret`
 
 ## Usage
+
+#### Initialization
+
+```js
+const CipherChain = require('cipher-chain')
+
+const aAsyncFunction = async () => {
+	const options = {} // default options
+	const cipherchain = await new CipherChain(options)
+}
+```
+
+#### Options
+
+- `secret` The secret to use for key stretching and encrypting/decrypting all algorithms with. No default, must be specified unless `secretFile` used.
+- `secretFile` A path to a file that points to a cipher-chain generate key file (256 bytes) used for encryption/decryption. If the file does not exist, it is generated, saved and used as the `secret`. If the file is found the contents are loaded as the `secret`
+- `hmacVerify` Do `encrypt-then-MAC` to verify authenticity of the encrypted ciphertext
+- `autoPadding` boolean to switch auto padding for the cipher
+- `concurrentFiles` how many concurrent files will be encrypted and decrypted at any given time. Default 100
+- `hmacAlgorithm` string for what algorith the hmac verify should use. Default `sha512`
+- `kdf` object setting for kdf, **see below**
+
+**kdf object setting for the kdf option**
+
+```js
+const argon2 = require('argon2')
+{
+    use: 'argon2', // or blake2, scrypt, pbkdf2,
+    saltLength: 4, // salt length for the kdf, bigger value means bigger ciphertext data, especially with multiple chain encrypts
+    options: {
+      argon2: { // some argon2 setings you could do
+        type: argon2.argon2i,
+        memoryCost: 1024 * 4, // 4mb
+        timeCost: 4
+      },
+      pbkdf2: { // some pbkdf2 setings you could do
+        rounds: 10000,
+        hash: 'sha512'
+      }
+    }
+}
+```
+
+#### Methods
+
+##### cipherchain.ciphers
+
+_Gets a list of all available ciphers to work with_
+
+##### cipherchain.kdfs
+
+_Gets a list of all available KDFs to work with_
+
+##### cipherchain.encrypt(plaintext:[string])
+
+_Encrypts a plaintext to a ciphertext_
+
+**example:**
+
+```js
+let encrypted = await cipherchain.encrypt('secret data')
+```
+
+##### cipherchain.decrypt(ciphertext:[string])
+
+_Decrypts a ciphertext to a plaintext_
+
+**example:**
+
+```js
+let decrypted = await cipherchain.decrypt(encrypted)
+```
+
+##### cipherchain.encryptFile(filename:[path])
+
+_Encrypts a file_
+
+**example:**
+
+```js
+await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
+```
+
+##### cipherchain.decryptFile(filename:[path])
+
+_Decrypts a file_
+
+**example:**
+
+```js
+await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
+```
+
+##### cipherchain.encryptDirectory(directory:[path])
+
+_Encrypts a directory_
+
+**example:**
+
+```js
+await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
+```
+
+##### cipherchain.decryptDirectory(directory:[path])
+
+_Decrypts a directory_
+
+**example:**
+
+```js
+await cipherchain.decryptDirectory(path.join('../', 'encryptme'))
+```
+
+#### Example
 
 ```js
 const CipherChain = require('cipher-chain')
@@ -124,76 +238,6 @@ const start = async () => {
 }
 
 start()
-```
-
-## Api
-
-#### cipherchain.ciphers
-
-_Gets a list of all available ciphers to work with_
-
-#### cipherchain.kdfs
-
-_Gets a list of all available KDFs to work with_
-
-#### cipherchain.encrypt(plaintext:[string])
-
-_Encrypts a plaintext to a ciphertext_
-
-**example:**
-
-```js
-let encrypted = await cipherchain.encrypt('secret data')
-```
-
-#### cipherchain.decrypt(ciphertext:[string])
-
-_Decrypts a ciphertext to a plaintext_
-
-**example:**
-
-```js
-let decrypted = await cipherchain.decrypt(encrypted)
-```
-
-#### cipherchain.encryptFile(filename:[path])
-
-_Encrypts a file_
-
-**example:**
-
-```js
-await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
-```
-
-#### cipherchain.decryptFile(filename:[path])
-
-_Decrypts a file_
-
-**example:**
-
-```js
-await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
-```
-
-#### cipherchain.encryptDirectory(directory:[path])
-
-_Encrypts a directory_
-
-**example:**
-
-```js
-await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
-```
-
-#### cipherchain.decryptDirectory(directory:[path])
-
-_Decrypts a directory_
-
-**example:**
-
-```js
-await cipherchain.decryptDirectory(path.join('../', 'encryptme'))
 ```
 
 ## License
