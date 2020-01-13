@@ -88,9 +88,7 @@ const data = {
 
 Cipher-chain knows this internally when trying to decrypt your strings. The only piece of the puzzle here to decrypt the `encryptedData` variable is if we know the `secret`
 
-## Usage
-
-#### Initialization
+## Initialization
 
 ```js
 const CipherChain = require('cipher-chain')
@@ -101,7 +99,7 @@ const aAsyncFunction = async () => {
 }
 ```
 
-#### Options
+## Options
 
 - `secret` The secret to use for key stretching and encrypting/decrypting all algorithms with. No default, must be specified unless `secretFile` used.
 - `secretFile` A path to a file that points to a cipher-chain generate key file (256 bytes) used for encryption/decryption. If the file does not exist, it is generated, saved and used as the `secret`. If the file is found the contents are loaded as the `secret`
@@ -132,17 +130,17 @@ const argon2 = require('argon2')
 }
 ```
 
-#### Methods
+## Methods
 
-##### cipherchain.ciphers
+#### cipherchain.ciphers
 
 _Gets a list of all available ciphers to work with_
 
-##### cipherchain.kdfs
+#### cipherchain.kdfs
 
 _Gets a list of all available KDFs to work with_
 
-##### cipherchain.encrypt(plaintext:[string])
+#### cipherchain.encrypt(plaintext:[string])
 
 _Encrypts a plaintext to a ciphertext_
 
@@ -150,7 +148,7 @@ _Encrypts a plaintext to a ciphertext_
 let encrypted = await cipherchain.encrypt('secret data')
 ```
 
-##### cipherchain.decrypt(ciphertext:[string])
+#### cipherchain.decrypt(ciphertext:[string])
 
 _Decrypts a ciphertext to a plaintext_
 
@@ -158,7 +156,7 @@ _Decrypts a ciphertext to a plaintext_
 let decrypted = await cipherchain.decrypt(encrypted)
 ```
 
-##### cipherchain.encryptFile(filename:[path])
+#### cipherchain.encryptFile(filename:[path])
 
 _Encrypts a file_
 
@@ -166,7 +164,7 @@ _Encrypts a file_
 await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
 ```
 
-##### cipherchain.decryptFile(filename:[path])
+#### cipherchain.decryptFile(filename:[path])
 
 _Decrypts a file_
 
@@ -174,7 +172,7 @@ _Decrypts a file_
 await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
 ```
 
-##### cipherchain.encryptDirectory(directory:[path])
+#### cipherchain.encryptDirectory(directory:[path])
 
 _Encrypts a directory_
 
@@ -182,7 +180,7 @@ _Encrypts a directory_
 await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
 ```
 
-##### cipherchain.decryptDirectory(directory:[path])
+#### cipherchain.decryptDirectory(directory:[path])
 
 _Decrypts a directory_
 
@@ -190,7 +188,7 @@ _Decrypts a directory_
 await cipherchain.decryptDirectory(path.join('../', 'encryptme'))
 ```
 
-#### Example
+## Example
 
 ```js
 const CipherChain = require('cipher-chain')
