@@ -36,11 +36,11 @@ So if you have a `chain` value of `['aes-256-gcm', 'aes-192-gcm', 'camellia-256-
 
 then the encryption process will be:
 
-_plaintext -> aes-256-gcm -> aes-192-gcm -> camellia-256-cbc -> ciphertext`_
+_plaintext -> aes-256-gcm -> aes-192-gcm -> camellia-256-cbc -> ciphertext_
 
 and decryption process will be:
 
-_ciphertext -> aes-256-gcm -> aes-192-gcm -> camellia-256-cbc -> plaintext`_
+_ciphertext -> camellia-256-cbc -> aes-192-gcm -> aes-256-gcm -> plaintext_
 
 After encryption chain end a `hmac` is computed of the end resulting `ciphertext` and before decryption chain start the hmac is compared (timings safe) against the end resulting `ciphertext` of that decryption process. If it not verifies a error is thrown
 
