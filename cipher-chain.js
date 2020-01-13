@@ -41,6 +41,7 @@ class CipherChain {
       this.doHmac = _.get(options, 'hmacVerify', true)
       this.secret = _.get(options, 'secret')
       this.concurrentFiles = _.get(options, 'concurrentFiles', 100)
+      this.maxEncryptFileInBytes = _.get(options, 'maxEncryptFileInBytes', 170000000)
       this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
 
       if (!_.get(options, 'chain')) {
@@ -126,66 +127,67 @@ class CipherChain {
   }
 
   async encryptDirectory(dirpatt) {
-    const cipherChainFile = path.join(dirpatt, '.cipher-chain')
-    if (fs.existsSync(cipherChainFile)) {
-      throw new Error(`Directory '${dirpatt}' already encrypted`)
-    }
     const files = glob.sync('**/*', { cwd: dirpatt })
-    const filenames = []
-
     const encryptFile = file =>
       new Promise(async resolve => {
-        const data = await this.encrypt(file)
-        const hashedFilename = crypto
-          .createHmac('sha1', this.secret)
-          .update(file)
-          .digest('hex')
         const fileToEncrypt = path.join(dirpatt, file)
-        filenames.push({
-          data,
-          hash: hashedFilename
-        })
         await this.encryptFile(fileToEncrypt)
-        fs.renameSync(fileToEncrypt, path.join(dirpatt, hashedFilename))
         return resolve()
       })
     await asyncPool(this.concurrentFiles, files, encryptFile)
-
-    fs.writeFileSync(cipherChainFile, JSON.stringify(filenames))
   }
 
   async decryptDirectory(dirpatt) {
-    const cipherChainFile = path.join(dirpatt, '.cipher-chain')
-    if (!fs.existsSync(cipherChainFile)) {
-      throw new Error(`Directory '${dirpatt}' is not encrypted (.cipher-chain file not found!)`)
-    }
-    const filenames = JSON.parse(fs.readFileSync(cipherChainFile))
-
-    const decryptFile = filename =>
+    const files = glob.sync('**/*', { cwd: dirpatt })
+    const decryptFile = file =>
       new Promise(async resolve => {
-        const fileToDecrypt = path.join(dirpatt, filename.hash)
+        const fileToDecrypt = path.join(dirpatt, file)
         if (fs.existsSync(fileToDecrypt)) {
           await this.decryptFile(fileToDecrypt)
-          const newFilename = await this.decrypt(filename.data)
-          fs.renameSync(fileToDecrypt, path.join(dirpatt, newFilename))
         }
         return resolve()
       })
-    await asyncPool(this.concurrentFiles, filenames, decryptFile)
-    fs.unlinkSync(cipherChainFile)
+    await asyncPool(this.concurrentFiles, files, decryptFile)
   }
 
   async encryptFile(file) {
+    const stats = fs.statSync(file)
+    const fileSizeInBytes = stats['size']
+    if (fileSizeInBytes >= this.maxEncryptFileInBytes) {
+      throw new Error(
+        `${file} is over ${fileSizeInBytes.toLocaleString()} bytes, maxEncryptFileInBytes is ${this.maxEncryptFileInBytes.toLocaleString()}`
+      )
+    }
     const data = fs.readFileSync(file, 'base64')
-    const encryptedData = await this.encrypt(data)
+
+    const original = await this.encrypt(file)
+    const hashedFilename = crypto
+      .createHmac('sha1', this.secret)
+      .update(`${this.randomBytes(512)}:${process.hrtime()}`)
+      .digest('hex')
+    const jsonData = JSON.stringify({
+      data,
+      original,
+      filename: hashedFilename
+    })
+    const encryptedData = await this.encrypt(jsonData)
     fs.writeFileSync(file, encryptedData)
+    fs.renameSync(file, path.join(path.dirname(file), hashedFilename))
     return true
   }
 
   async decryptFile(file) {
     const data = fs.readFileSync(file, 'utf-8')
+    if (data.slice(0, 5) != `@CC${version}-`) {
+      return false
+    }
     const decryptedData = await this.decrypt(data)
-    fs.writeFileSync(file, Buffer.from(decryptedData, 'base64'))
+
+    const jsonData = JSON.parse(decryptedData)
+    const newFilename = await this.decrypt(jsonData.original)
+    fs.writeFileSync(file, Buffer.from(jsonData.data, 'base64'))
+    fs.renameSync(path.join(path.dirname(file), jsonData.filename), newFilename)
+
     return true
   }
 

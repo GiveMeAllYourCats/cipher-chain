@@ -30,7 +30,7 @@ Secondly you will need to define a `chain`, this will be the path the encryption
 
 When you create a `cipher-chain` instance the script goes through the `chain` list and for every algorithm it creates a kdf generated hashed key derived from the `secret` that matches the `key` length requirements for that particular cipher
 
-Then when you call the `cipherchain.encrypt` function it checks what the `chain` is and will convert your `plaintext` to `ciphertext` via traversal of the `chain` list.
+Then when you call the `cipherchain.encrypt`, `cipherchain.encryptFile(file)` or `cipherchain.encryptDirectory(directory)` function it checks what the `chain` is and will convert your `plaintext` to `ciphertext` via traversal of the `chain` list.
 
 So if you have a `chain` value of `['aes-256-gcm', 'aes-192-gcm', 'camellia-256-cbc']`
 
@@ -48,7 +48,7 @@ For each algorithm encryption `chain` pass a random `initialization vector` is g
 
 #### - Decrypting
 
-All encrypted strings have the same format and recgonisable by the starting prefix of `@CC2-` indicating its a cipher-chain version 2 string. They can look like this:
+All encrypted strings have the same format and recgonisable by the starting prefix of `@CC3-` indicating its a cipher-chain encrypted string and its major version 3, so if there are breaking changes because of a major version update in the module, the encrypted ciphertext wont be compatible to decrypt. They can look like this:
 
 `@CC3-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:0:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
 
@@ -158,7 +158,7 @@ let decrypted = await cipherchain.decrypt(encrypted)
 
 #### cipherchain.encryptFile(filename:[path])
 
-_Encrypts a file_
+_Encrypts a file, also hashes filename_
 
 ```js
 await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
@@ -174,7 +174,7 @@ await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
 
 #### cipherchain.encryptDirectory(directory:[path])
 
-_Encrypts a directory_
+_Encrypts a directory, also hashes filenames_
 
 ```js
 await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
