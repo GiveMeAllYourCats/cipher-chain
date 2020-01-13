@@ -146,8 +146,6 @@ _Gets a list of all available KDFs to work with_
 
 _Encrypts a plaintext to a ciphertext_
 
-**example:**
-
 ```js
 let encrypted = await cipherchain.encrypt('secret data')
 ```
@@ -155,8 +153,6 @@ let encrypted = await cipherchain.encrypt('secret data')
 ##### cipherchain.decrypt(ciphertext:[string])
 
 _Decrypts a ciphertext to a plaintext_
-
-**example:**
 
 ```js
 let decrypted = await cipherchain.decrypt(encrypted)
@@ -166,8 +162,6 @@ let decrypted = await cipherchain.decrypt(encrypted)
 
 _Encrypts a file_
 
-**example:**
-
 ```js
 await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
 ```
@@ -175,8 +169,6 @@ await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
 ##### cipherchain.decryptFile(filename:[path])
 
 _Decrypts a file_
-
-**example:**
 
 ```js
 await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
@@ -186,8 +178,6 @@ await cipherchain.decryptFile(path.join('../', 'encryptme.txt'))
 
 _Encrypts a directory_
 
-**example:**
-
 ```js
 await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
 ```
@@ -195,8 +185,6 @@ await cipherchain.encryptDirectory(path.join('../', 'encryptme'))
 ##### cipherchain.decryptDirectory(directory:[path])
 
 _Decrypts a directory_
-
-**example:**
 
 ```js
 await cipherchain.decryptDirectory(path.join('../', 'encryptme'))
@@ -233,8 +221,8 @@ const start = async () => {
 	await cipherchain.decryptFile('./file.txt')
 
 	// Encrypt/decrypt a directory
-	await cipherchain.encryptFile('./directory')
-	await cipherchain.decryptFile('./directory')
+	await cipherchain.encryptDirectory('./directory')
+	await cipherchain.decryptDirectory('./directory')
 }
 
 start()
