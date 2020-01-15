@@ -20,7 +20,7 @@ class CipherChain {
       // Setup instance options
       const standardKdfSettings = {
         use: 'argon2',
-        saltLength: 4,
+        saltLength: 12,
         options: {
           argon2: {
             type: argon2.argon2i,
@@ -38,8 +38,6 @@ class CipherChain {
       this.kdfs = ['blake2', 'argon2', 'pbkdf2', 'scrypt']
 
       this.autoPadding = _.get(options, 'autoPadding', true)
-      this.doHmac = _.get(options, 'hmacVerify', true)
-      this.secret = _.get(options, 'secret')
       this.concurrentFiles = _.get(options, 'concurrentFiles', 100)
       this.maxEncryptFileInBytes = _.get(options, 'maxEncryptFileInBytes', 170000000)
       this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
@@ -53,30 +51,35 @@ class CipherChain {
       }
       this.chain = options.chain
 
-      this.secretFile = _.get(options, 'secretFile')
-      if (this.secretFile) {
-        if (!fs.existsSync(this.secretFile)) {
-          this.secret = crypto.randomBytes(256).toString('hex')
-          fs.writeFileSync(this.secretFile, this.secret)
-        } else {
-          this.secret = fs
-            .readFileSync(this.secretFile)
-            .toString('ascii')
-            .replace(/\s/g, '')
-        }
-      }
+      this.secret = _.get(options, 'secret')
 
       if (!this.secret) {
         throw new Error('No secret or secretfile was defined.')
+      }
+
+      if (!Array.isArray(this.secret) && this.chain.length >= 2) {
+        throw new Error('Secret needs to be a array')
+      }
+
+      if (!Array.isArray(this.secret)) {
+        this.secret = [this.secret]
+      }
+
+      if (this.secret.length != this.chain.length) {
+        throw new Error('Secret array needs to have as much elements as the chain option')
       }
 
       this.ciphers = await require('./ciphers.js')()
       for (let index in this.chain) {
         const algorithm = this.chain[index]
         const cipher = this.ciphers[algorithm]
+        if (!cipher) {
+          throw new Error(`Could not find cipher algorithm '${algorithm}'`)
+        }
         this.chain[index] = {
+          index: index,
           cipher: cipher,
-          kdf: await this.generateSecret(this.secret, this.kdf.salt, cipher.key)
+          kdf: await this.generateSecret(this.secret[index], this.secretSalt, cipher.key)
         }
       }
 
@@ -89,12 +92,9 @@ class CipherChain {
       plaintext = await this.encryptInternal(plaintext, chain)
     }
 
-    let hmac = 0
-    if (this.doHmac) {
-      hmac = await this.hmac(plaintext)
-    }
+    const hmac = `${await this.hmac(plaintext, this.secret.join(''))}:`
 
-    plaintext = `@CC${version}-${hmac}:${plaintext}`
+    plaintext = `@CC${version}-${hmac}${plaintext}`
 
     return plaintext
   }
@@ -103,24 +103,20 @@ class CipherChain {
     if (encrypted.slice(0, 5) != `@CC${version}-`) {
       throw new Error(`Not a encrypted cipher-chain version ${version} string`)
     }
-
     encrypted = encrypted.replace(`@CC${version}-`, '')
-    let encryptedMacCheck = encrypted.split(':')
-    encryptedMacCheck.shift()
-    encryptedMacCheck = encryptedMacCheck.join(':')
-    const checkHmac = await this.hmac(encryptedMacCheck)
 
-    const encryptedHmac = encrypted.split(':')[0]
-    encrypted = encrypted.replace(`${encryptedHmac}:`, '')
+    let computedHmac = encrypted.split(':')[0]
+    encrypted = encrypted.replace(computedHmac + ':', '')
+    const hmac = `${await this.hmac(encrypted, this.secret.join(''))}`
 
-    if (checkHmac != 0 && encryptedHmac != 0) {
-      if (!crypto.timingSafeEqual(Buffer.from(encryptedHmac), Buffer.from(checkHmac))) {
-        throw new Error('HMAC verification failed')
-      }
+    if (crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(computedHmac)) === false) {
+      throw new Error('HMAC verification failed')
     }
 
-    while (encrypted.split(':').length == 6) {
-      encrypted = await this.decryptInternal(encrypted)
+    let index = this.chain.length - 1
+    while (index != -1) {
+      encrypted = await this.decryptInternal(encrypted, index)
+      index--
     }
 
     return encrypted
@@ -161,10 +157,7 @@ class CipherChain {
     const data = fs.readFileSync(file, 'base64')
 
     const original = await this.encrypt(file)
-    const hashedFilename = crypto
-      .createHmac('sha1', this.secret)
-      .update(`${this.randomBytes(512)}:${process.hrtime()}`)
-      .digest('hex')
+    const hashedFilename = this.randomBytes(64).toString('hex')
     const jsonData = JSON.stringify({
       data,
       original,
@@ -173,7 +166,7 @@ class CipherChain {
     const encryptedData = await this.encrypt(jsonData)
     fs.writeFileSync(file, encryptedData)
     fs.renameSync(file, path.join(path.dirname(file), hashedFilename))
-    return true
+    return path.join(path.dirname(file), hashedFilename)
   }
 
   async decryptFile(file) {
@@ -194,34 +187,30 @@ class CipherChain {
   async encryptInternal(plaintext, chain) {
     const iv = this.randomBytes(chain.cipher.iv)
     const cipher = await this.cipher(plaintext, chain.cipher.cipher, chain.kdf.hash, iv)
-    return `${chain.cipher.id}:${cipher.autoPadding}:${cipher.authtag}:${chain.kdf.salt}:${iv}:${cipher.encrypted}`
+    return `${cipher.autoPadding}:${cipher.authtag}:${chain.kdf.salt}:${iv}:${cipher.encrypted}`
   }
 
-  async decryptInternal(encrypted) {
+  async decryptInternal(encrypted, index) {
     const encryptedSplit = encrypted.split(':')
 
     if (encryptedSplit.length === 1) {
       return encrypted
     }
 
-    const algorithm = _.find(this.ciphers, e => {
-      return e.id == encryptedSplit[0]
-    })
-    const autoPadding = !!encryptedSplit[1]
-    const authTag = encryptedSplit[2]
-    const kdfSalt = encryptedSplit[3]
-    const iv = encryptedSplit[4]
-    const encryption = encryptedSplit[5]
-    if (!algorithm) {
-      throw new Error(`Could not find algorithm id '${encryptedSplit[0]}'`)
-    }
-    const cipher = this.ciphers[algorithm.cipher]
-    const secret = await this.generateSecret(this.secret, kdfSalt, cipher.key)
+    const autoPadding = !!encryptedSplit[0]
+    const authTag = encryptedSplit[1]
+    const kdfSalt = encryptedSplit[2]
+    const iv = encryptedSplit[3]
+    const encryption = encryptedSplit[4]
+    const secret = await this.generateSecret(this.secret[index], kdfSalt, this.chain[index].cipher.key)
     const options = {}
-    return await this.decipher(encryption, algorithm, secret, iv, autoPadding, authTag, options)
+    return await this.decipher(encryption, this.chain[index].cipher, secret, iv, autoPadding, authTag, options)
   }
 
   async cipher(text, algorithm, key, iv, options = {}) {
+    if (_.get(this.ciphers[algorithm], 'authTagLength') !== false) {
+      options.authTagLength = this.ciphers[algorithm].authTagLength
+    }
     const cipher = crypto.createCipheriv(algorithm, key, iv, options)
     cipher.setAutoPadding(this.autoPadding)
     let encrypted = cipher.update(text, 'binary', 'hex')
@@ -246,6 +235,9 @@ class CipherChain {
   }
 
   async decipher(text, algorithm, key, iv, autoPadding, authtag = 0, options = {}) {
+    if (_.get(algorithm, 'authTagLength') !== false) {
+      options.authTagLength = algorithm.authTagLength
+    }
     const decipher = crypto.createDecipheriv(algorithm.cipher, key.hash, iv, options)
     decipher.setAutoPadding(autoPadding)
     if (authtag != 0) {
@@ -253,15 +245,7 @@ class CipherChain {
     }
     let decrypted = decipher.update(text, 'hex', 'binary')
 
-    try {
-      decrypted += decipher.final('binary')
-    } catch (e) {
-      if (e.code === 'ERR_OSSL_EVP_BAD_DECRYPT') {
-        return e.code
-      } else {
-        throw new Error(e)
-      }
-    }
+    decrypted += decipher.final('binary')
 
     return decrypted
   }
@@ -270,21 +254,11 @@ class CipherChain {
     return crypto.randomBytes(amount).toString('hex')
   }
 
-  async hmac(string, key, algorithm) {
-    if (!this.doHmac) {
-      return 0
-    }
-    if (!key) {
-      key = this.secret
-    }
-    if (!algorithm) {
-      algorithm = this.hmacAlgorithm
-    }
-    const hmac = crypto
-      .createHmac(algorithm, key)
+  async hmac(string, key) {
+    return crypto
+      .createHmac(this.hmacAlgorithm, key)
       .update(string)
       .digest('hex')
-    return hmac
   }
 
   async generateSecret(secret, salt, keylength) {
@@ -320,7 +294,7 @@ class CipherChain {
       throw new Error(`${this.kdf.use} is not a valid KDF`)
     }
 
-    return { salt, hash, kdf: this.kdf.use }
+    return { secret: secret, salt, hash, kdf: this.kdf.use }
   }
 }
 

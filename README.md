@@ -12,7 +12,7 @@
 [![Node version](https://img.shields.io/node/v/cipher-chain.svg)](https://www.npmjs.com/package/cipher-chain)
 [![Help us and star this project](https://img.shields.io/github/stars/michaeldegroot/cipher-chain.svg?style=social)](https://github.com/michaeldegroot/cipher-chain)
 
-Symmetric encryption and decryption of string(s) or file(s) protected via a `secret` string or `secretFile`
+Symmetric encryption and decryption of string(s) or file(s) protected via a `secret` string
 
 ## Installation
 
@@ -24,11 +24,10 @@ npm install cipher-chain --save
 
 #### - Encrypting
 
-When creating a `cipher-chain` instance you are presented with some options, you can use a `secret` or use a `secretFile`, a `secretFile` is a computer generated 'key' if you will that is a unique signature representing your `secret`
+When creating a `cipher-chain` instance you are presented with some options, First you need to define a `secret` this is a array and it needs to have the same length as your `chain` variable.
+So secondly you will need to define a `chain`, this will be the path the encryption/decryption process goes through to get the encrypted and plaintext respectively. `chain` is a array with strings representing all cipher algorithms. The cipher algorithm list can be viewed by calling `cipherchain.ciphers`
 
-Secondly you will need to define a `chain`, this will be the path the encryption/decryption process goes through to get the encrypted and plaintext respectively. `chain`is a array with string representing all cipher algorithms. The cipher algorithm list can be viewed by calling `cipherchain.ciphers`
-
-When you create a `cipher-chain` instance the script goes through the `chain` list and for every algorithm it creates a kdf generated hashed key derived from the `secret` that matches the `key` length requirements for that particular cipher
+When you create a `cipher-chain` instance the script goes through the `chain` list and for every algorithm it creates a kdf generated hashed key derived from the `secret` array corresponding index of the current chain index that then matches the `key` length requirements for that particular cipher
 
 Then when you call the `cipherchain.encrypt`, `cipherchain.encryptFile(file)` or `cipherchain.encryptDirectory(directory)` function it checks what the `chain` is and will convert your `plaintext` to `ciphertext` via traversal of the `chain` list.
 
@@ -48,18 +47,17 @@ For each algorithm encryption `chain` pass a random `initialization vector` is g
 
 #### - Decrypting
 
-All encrypted strings have the same format and recgonisable by the starting prefix of `@CC3-` indicating its a cipher-chain encrypted string and its major version 3, so if there are breaking changes because of a major version update in the module, the encrypted ciphertext wont be compatible to decrypt. They can look like this:
+All encrypted strings have the same format and recgonisable by the starting prefix of `@CC4-` indicating its a cipher-chain encrypted string and its major version 3, so if there are breaking changes because of a major version update in the module, the encrypted ciphertext wont be compatible to decrypt. They can look like this:
 
-`@CC3-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:0:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
+`@CC4-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
 
 If you look closely you can see `:` being delimiters which will have the following result when split:
 
-first the `@CC3-` is removed internally when decrypting the string
+first the `@CC4-` is removed internally when decrypting the string
 
 ```js
 ;[
 	'72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195',
-	'0',
 	'1',
 	'0',
 	'ab561e52d1e9c68d3d63c62952c0314f3c73ff0199657849ef20708af21a291e',
@@ -70,14 +68,13 @@ first the `@CC3-` is removed internally when decrypting the string
 
 The mapping for this format is as followed:
 
-`@CC[majorVersioNumberCipherChain]-[hmac]:[cipherAlgorithmId]:[autoPadding]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
+`@CC[majorVersioNumberCipherChain]-[hmac]:[autoPadding]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
 
 So we can conclude we have the following data when decrypting the string:
 
 ```js
 const data = {
 	hmac: '72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195',
-	cipherAlgorithmId: '0',
 	autoPadding: '1',
 	authTag: '0',
 	kdfSalt: 'ab561e52d1e9c68d3d63c62952c0314f3c73ff0199657849ef20708af21a291e',
@@ -86,7 +83,7 @@ const data = {
 }
 ```
 
-Cipher-chain knows this internally when trying to decrypt your strings. The only piece of the puzzle here to decrypt the `encryptedData` variable is if we know the `secret`
+Cipher-chain knows internally which algorithm cipher to use for this to decrypt your strings. The only piece of the puzzle here to decrypt the `encryptedData` variable is if we know the `secret` kdf hash for that specific chain
 
 ## Initialization
 
@@ -101,9 +98,8 @@ const aAsyncFunction = async () => {
 
 ## Options
 
-- `secret` The secret to use for key stretching and encrypting/decrypting all algorithms with. No default, must be specified unless `secretFile` used.
-- `secretFile` A path to a file that points to a cipher-chain generate key file (256 bytes) used for encryption/decryption. If the file does not exist, it is generated, saved and used as the `secret`. If the file is found the contents are loaded as the `secret`
-- `hmacVerify` Do `encrypt-then-MAC` to verify authenticity of the encrypted ciphertext
+- `secret` The secret(s) to use for specific chains, needs to be a array and as long as your `chain` option
+- `chain` Array with strings that hold the cipher algorithms you want to use as a path to traverse from plain to cipher and vice versa
 - `autoPadding` boolean to switch auto padding for the cipher
 - `concurrentFiles` how many concurrent files will be encrypted and decrypted at any given time. Default 100
 - `hmacAlgorithm` string for what algorith the hmac verify should use. Default `sha512`
@@ -122,7 +118,7 @@ const argon2 = require('argon2')
         memoryCost: 1024 * 4, // 4mb
         timeCost: 4
       },
-      pbkdf2: { // some pbkdf2 setings you could do
+      pbkdf2: { // some pbkdf2 setings you could do, since 'use' in options is set to 'argon2' this is obsolete
         rounds: 10000,
         hash: 'sha512'
       }
@@ -161,7 +157,7 @@ let decrypted = await cipherchain.decrypt(encrypted)
 _Encrypts a file, also hashes filename_
 
 ```js
-await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
+const newFilename = await cipherchain.encryptFile(path.join('../', 'encryptme.txt'))
 ```
 
 #### cipherchain.decryptFile(filename:[path])
@@ -195,7 +191,7 @@ const CipherChain = require('cipher-chain')
 
 const start = async () => {
 	const cipherchain = await new CipherChain({
-		secret: 'very secret!',
+		secret: ['BxDAEaHZRqLZDVaz', 'WRWPiKEsEFMCmgHH', 'IeAujwvFmYFEzjOi'],
 		kdf: 'argon2',
 		chain: ['aes-256-gcm', 'blowfish', 'camellia-256-cbc'],
 		options: {
@@ -215,8 +211,8 @@ const start = async () => {
 	const plaintext = await cipherchain.decrypt(ciphertext)
 
 	// Encrypt/decrypt a file
-	await cipherchain.encryptFile('./file.txt')
-	await cipherchain.decryptFile('./file.txt')
+	const newFilename = await cipherchain.encryptFile('./file.txt')
+	await cipherchain.decryptFile(newFilename)
 
 	// Encrypt/decrypt a directory
 	await cipherchain.encryptDirectory('./directory')
