@@ -1,0 +1,1214 @@
+{
+  "index": [
+    {
+      "key": "ciphers",
+      "val": {
+        "aes-128-cbc": {
+          "cipher": "aes-128-cbc",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 0
+        },
+        "aes-128-ccm": {
+          "cipher": "aes-128-ccm",
+          "key": 8,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 1
+        },
+        "aes-128-cfb": {
+          "cipher": "aes-128-cfb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 2
+        },
+        "aes-128-cfb1": {
+          "cipher": "aes-128-cfb1",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 3
+        },
+        "aes-128-cfb8": {
+          "cipher": "aes-128-cfb8",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 4
+        },
+        "aes-128-ctr": {
+          "cipher": "aes-128-ctr",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 5
+        },
+        "aes-128-ecb": {
+          "cipher": "aes-128-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 6
+        },
+        "aes-128-gcm": {
+          "cipher": "aes-128-gcm",
+          "key": 8,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 7
+        },
+        "aes-128-ocb": {
+          "cipher": "aes-128-ocb",
+          "key": 8,
+          "iv": 7,
+          "authTagLength": 16,
+          "id": 8
+        },
+        "aes-128-ofb": {
+          "cipher": "aes-128-ofb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 9
+        },
+        "aes-128-xts": {
+          "cipher": "aes-128-xts",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 10
+        },
+        "aes-192-cbc": {
+          "cipher": "aes-192-cbc",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 11
+        },
+        "aes-192-ccm": {
+          "cipher": "aes-192-ccm",
+          "key": 12,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 12
+        },
+        "aes-192-cfb": {
+          "cipher": "aes-192-cfb",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 13
+        },
+        "aes-192-cfb1": {
+          "cipher": "aes-192-cfb1",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 14
+        },
+        "aes-192-cfb8": {
+          "cipher": "aes-192-cfb8",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 15
+        },
+        "aes-192-ctr": {
+          "cipher": "aes-192-ctr",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 16
+        },
+        "aes-192-ecb": {
+          "cipher": "aes-192-ecb",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 17
+        },
+        "aes-192-gcm": {
+          "cipher": "aes-192-gcm",
+          "key": 12,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 18
+        },
+        "aes-192-ocb": {
+          "cipher": "aes-192-ocb",
+          "key": 12,
+          "iv": 7,
+          "authTagLength": 16,
+          "id": 19
+        },
+        "aes-192-ofb": {
+          "cipher": "aes-192-ofb",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 20
+        },
+        "aes-256-cbc": {
+          "cipher": "aes-256-cbc",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 21
+        },
+        "aes-256-ccm": {
+          "cipher": "aes-256-ccm",
+          "key": 16,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 22
+        },
+        "aes-256-cfb": {
+          "cipher": "aes-256-cfb",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 23
+        },
+        "aes-256-cfb1": {
+          "cipher": "aes-256-cfb1",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 24
+        },
+        "aes-256-cfb8": {
+          "cipher": "aes-256-cfb8",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 25
+        },
+        "aes-256-ctr": {
+          "cipher": "aes-256-ctr",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 26
+        },
+        "aes-256-ecb": {
+          "cipher": "aes-256-ecb",
+          "key": 16,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 27
+        },
+        "aes-256-gcm": {
+          "cipher": "aes-256-gcm",
+          "key": 16,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 28
+        },
+        "aes-256-ocb": {
+          "cipher": "aes-256-ocb",
+          "key": 16,
+          "iv": 7,
+          "authTagLength": 16,
+          "id": 29
+        },
+        "aes-256-ofb": {
+          "cipher": "aes-256-ofb",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 30
+        },
+        "aes-256-xts": {
+          "cipher": "aes-256-xts",
+          "key": 32,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 31
+        },
+        "aes128": {
+          "cipher": "aes128",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 32
+        },
+        "aes128-wrap": {
+          "cipher": "aes128-wrap",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 33
+        },
+        "aes192": {
+          "cipher": "aes192",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 34
+        },
+        "aes192-wrap": {
+          "cipher": "aes192-wrap",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 35
+        },
+        "aes256": {
+          "cipher": "aes256",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 36
+        },
+        "aes256-wrap": {
+          "cipher": "aes256-wrap",
+          "key": 16,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 37
+        },
+        "aria-128-cbc": {
+          "cipher": "aria-128-cbc",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 38
+        },
+        "aria-128-ccm": {
+          "cipher": "aria-128-ccm",
+          "key": 8,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 39
+        },
+        "aria-128-cfb": {
+          "cipher": "aria-128-cfb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 40
+        },
+        "aria-128-cfb1": {
+          "cipher": "aria-128-cfb1",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 41
+        },
+        "aria-128-cfb8": {
+          "cipher": "aria-128-cfb8",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 42
+        },
+        "aria-128-ctr": {
+          "cipher": "aria-128-ctr",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 43
+        },
+        "aria-128-ecb": {
+          "cipher": "aria-128-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 44
+        },
+        "aria-128-gcm": {
+          "cipher": "aria-128-gcm",
+          "key": 8,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 45
+        },
+        "aria-128-ofb": {
+          "cipher": "aria-128-ofb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 46
+        },
+        "aria-192-cbc": {
+          "cipher": "aria-192-cbc",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 47
+        },
+        "aria-192-ccm": {
+          "cipher": "aria-192-ccm",
+          "key": 12,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 48
+        },
+        "aria-192-cfb": {
+          "cipher": "aria-192-cfb",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 49
+        },
+        "aria-192-cfb1": {
+          "cipher": "aria-192-cfb1",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 50
+        },
+        "aria-192-cfb8": {
+          "cipher": "aria-192-cfb8",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 51
+        },
+        "aria-192-ctr": {
+          "cipher": "aria-192-ctr",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 52
+        },
+        "aria-192-ecb": {
+          "cipher": "aria-192-ecb",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 53
+        },
+        "aria-192-gcm": {
+          "cipher": "aria-192-gcm",
+          "key": 12,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 54
+        },
+        "aria-192-ofb": {
+          "cipher": "aria-192-ofb",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 55
+        },
+        "aria-256-cbc": {
+          "cipher": "aria-256-cbc",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 56
+        },
+        "aria-256-ccm": {
+          "cipher": "aria-256-ccm",
+          "key": 16,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 57
+        },
+        "aria-256-cfb": {
+          "cipher": "aria-256-cfb",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 58
+        },
+        "aria-256-cfb1": {
+          "cipher": "aria-256-cfb1",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 59
+        },
+        "aria-256-cfb8": {
+          "cipher": "aria-256-cfb8",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 60
+        },
+        "aria-256-ctr": {
+          "cipher": "aria-256-ctr",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 61
+        },
+        "aria-256-ecb": {
+          "cipher": "aria-256-ecb",
+          "key": 16,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 62
+        },
+        "aria-256-gcm": {
+          "cipher": "aria-256-gcm",
+          "key": 16,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 63
+        },
+        "aria-256-ofb": {
+          "cipher": "aria-256-ofb",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 64
+        },
+        "aria128": {
+          "cipher": "aria128",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 65
+        },
+        "aria192": {
+          "cipher": "aria192",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 66
+        },
+        "aria256": {
+          "cipher": "aria256",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 67
+        },
+        "bf": {
+          "cipher": "bf",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 68
+        },
+        "bf-cbc": {
+          "cipher": "bf-cbc",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 69
+        },
+        "bf-cfb": {
+          "cipher": "bf-cfb",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 70
+        },
+        "bf-ecb": {
+          "cipher": "bf-ecb",
+          "key": 32,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 71
+        },
+        "bf-ofb": {
+          "cipher": "bf-ofb",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 72
+        },
+        "blowfish": {
+          "cipher": "blowfish",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 73
+        },
+        "camellia-128-cbc": {
+          "cipher": "camellia-128-cbc",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 74
+        },
+        "camellia-128-cfb": {
+          "cipher": "camellia-128-cfb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 75
+        },
+        "camellia-128-cfb1": {
+          "cipher": "camellia-128-cfb1",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 76
+        },
+        "camellia-128-cfb8": {
+          "cipher": "camellia-128-cfb8",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 77
+        },
+        "camellia-128-ctr": {
+          "cipher": "camellia-128-ctr",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 78
+        },
+        "camellia-128-ecb": {
+          "cipher": "camellia-128-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 79
+        },
+        "camellia-128-ofb": {
+          "cipher": "camellia-128-ofb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 80
+        },
+        "camellia-192-cbc": {
+          "cipher": "camellia-192-cbc",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 81
+        },
+        "camellia-192-cfb": {
+          "cipher": "camellia-192-cfb",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 82
+        },
+        "camellia-192-cfb1": {
+          "cipher": "camellia-192-cfb1",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 83
+        },
+        "camellia-192-cfb8": {
+          "cipher": "camellia-192-cfb8",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 84
+        },
+        "camellia-192-ctr": {
+          "cipher": "camellia-192-ctr",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 85
+        },
+        "camellia-192-ecb": {
+          "cipher": "camellia-192-ecb",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 86
+        },
+        "camellia-192-ofb": {
+          "cipher": "camellia-192-ofb",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 87
+        },
+        "camellia-256-cbc": {
+          "cipher": "camellia-256-cbc",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 88
+        },
+        "camellia-256-cfb": {
+          "cipher": "camellia-256-cfb",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 89
+        },
+        "camellia-256-cfb1": {
+          "cipher": "camellia-256-cfb1",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 90
+        },
+        "camellia-256-cfb8": {
+          "cipher": "camellia-256-cfb8",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 91
+        },
+        "camellia-256-ctr": {
+          "cipher": "camellia-256-ctr",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 92
+        },
+        "camellia-256-ecb": {
+          "cipher": "camellia-256-ecb",
+          "key": 16,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 93
+        },
+        "camellia-256-ofb": {
+          "cipher": "camellia-256-ofb",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 94
+        },
+        "camellia128": {
+          "cipher": "camellia128",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 95
+        },
+        "camellia192": {
+          "cipher": "camellia192",
+          "key": 12,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 96
+        },
+        "camellia256": {
+          "cipher": "camellia256",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 97
+        },
+        "cast": {
+          "cipher": "cast",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 98
+        },
+        "cast-cbc": {
+          "cipher": "cast-cbc",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 99
+        },
+        "cast5-cbc": {
+          "cipher": "cast5-cbc",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 100
+        },
+        "cast5-cfb": {
+          "cipher": "cast5-cfb",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 101
+        },
+        "cast5-ecb": {
+          "cipher": "cast5-ecb",
+          "key": 32,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 102
+        },
+        "cast5-ofb": {
+          "cipher": "cast5-ofb",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 103
+        },
+        "chacha20": {
+          "cipher": "chacha20",
+          "key": 16,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 104
+        },
+        "chacha20-poly1305": {
+          "cipher": "chacha20-poly1305",
+          "key": 16,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 105
+        },
+        "des": {
+          "cipher": "des",
+          "key": 4,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 106
+        },
+        "des-cbc": {
+          "cipher": "des-cbc",
+          "key": 4,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 107
+        },
+        "des-cfb": {
+          "cipher": "des-cfb",
+          "key": 4,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 108
+        },
+        "des-cfb1": {
+          "cipher": "des-cfb1",
+          "key": 4,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 109
+        },
+        "des-cfb8": {
+          "cipher": "des-cfb8",
+          "key": 4,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 110
+        },
+        "des-ecb": {
+          "cipher": "des-ecb",
+          "key": 4,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 111
+        },
+        "des-ede": {
+          "cipher": "des-ede",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 112
+        },
+        "des-ede-cbc": {
+          "cipher": "des-ede-cbc",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 113
+        },
+        "des-ede-cfb": {
+          "cipher": "des-ede-cfb",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 114
+        },
+        "des-ede-ecb": {
+          "cipher": "des-ede-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 115
+        },
+        "des-ede-ofb": {
+          "cipher": "des-ede-ofb",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 116
+        },
+        "des-ede3": {
+          "cipher": "des-ede3",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 117
+        },
+        "des-ede3-cbc": {
+          "cipher": "des-ede3-cbc",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 118
+        },
+        "des-ede3-cfb": {
+          "cipher": "des-ede3-cfb",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 119
+        },
+        "des-ede3-cfb1": {
+          "cipher": "des-ede3-cfb1",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 120
+        },
+        "des-ede3-cfb8": {
+          "cipher": "des-ede3-cfb8",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 121
+        },
+        "des-ede3-ecb": {
+          "cipher": "des-ede3-ecb",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 122
+        },
+        "des-ede3-ofb": {
+          "cipher": "des-ede3-ofb",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 123
+        },
+        "des-ofb": {
+          "cipher": "des-ofb",
+          "key": 4,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 124
+        },
+        "des3": {
+          "cipher": "des3",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 125
+        },
+        "des3-wrap": {
+          "cipher": "des3-wrap",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 126
+        },
+        "desx": {
+          "cipher": "desx",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 127
+        },
+        "desx-cbc": {
+          "cipher": "desx-cbc",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 128
+        },
+        "id-aes128-CCM": {
+          "cipher": "id-aes128-CCM",
+          "key": 8,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 129
+        },
+        "id-aes128-GCM": {
+          "cipher": "id-aes128-GCM",
+          "key": 8,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 130
+        },
+        "id-aes128-wrap": {
+          "cipher": "id-aes128-wrap",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 131
+        },
+        "id-aes128-wrap-pad": {
+          "cipher": "id-aes128-wrap-pad",
+          "key": 8,
+          "iv": 2,
+          "authTagLength": false,
+          "id": 132
+        },
+        "id-aes192-CCM": {
+          "cipher": "id-aes192-CCM",
+          "key": 12,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 133
+        },
+        "id-aes192-GCM": {
+          "cipher": "id-aes192-GCM",
+          "key": 12,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 134
+        },
+        "id-aes192-wrap": {
+          "cipher": "id-aes192-wrap",
+          "key": 12,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 135
+        },
+        "id-aes192-wrap-pad": {
+          "cipher": "id-aes192-wrap-pad",
+          "key": 12,
+          "iv": 2,
+          "authTagLength": false,
+          "id": 136
+        },
+        "id-aes256-CCM": {
+          "cipher": "id-aes256-CCM",
+          "key": 16,
+          "iv": 6,
+          "authTagLength": 16,
+          "id": 137
+        },
+        "id-aes256-GCM": {
+          "cipher": "id-aes256-GCM",
+          "key": 16,
+          "iv": 32,
+          "authTagLength": false,
+          "id": 138
+        },
+        "id-aes256-wrap": {
+          "cipher": "id-aes256-wrap",
+          "key": 16,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 139
+        },
+        "id-aes256-wrap-pad": {
+          "cipher": "id-aes256-wrap-pad",
+          "key": 16,
+          "iv": 2,
+          "authTagLength": false,
+          "id": 140
+        },
+        "id-smime-alg-CMS3DESwrap": {
+          "cipher": "id-smime-alg-CMS3DESwrap",
+          "key": 12,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 141
+        },
+        "idea": {
+          "cipher": "idea",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 142
+        },
+        "idea-cbc": {
+          "cipher": "idea-cbc",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 143
+        },
+        "idea-cfb": {
+          "cipher": "idea-cfb",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 144
+        },
+        "idea-ecb": {
+          "cipher": "idea-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 145
+        },
+        "idea-ofb": {
+          "cipher": "idea-ofb",
+          "key": 8,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 146
+        },
+        "rc2": {
+          "cipher": "rc2",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 147
+        },
+        "rc2-128": {
+          "cipher": "rc2-128",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 148
+        },
+        "rc2-40": {
+          "cipher": "rc2-40",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 149
+        },
+        "rc2-40-cbc": {
+          "cipher": "rc2-40-cbc",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 150
+        },
+        "rc2-64": {
+          "cipher": "rc2-64",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 151
+        },
+        "rc2-64-cbc": {
+          "cipher": "rc2-64-cbc",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 152
+        },
+        "rc2-cbc": {
+          "cipher": "rc2-cbc",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 153
+        },
+        "rc2-cfb": {
+          "cipher": "rc2-cfb",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 154
+        },
+        "rc2-ecb": {
+          "cipher": "rc2-ecb",
+          "key": 32,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 155
+        },
+        "rc2-ofb": {
+          "cipher": "rc2-ofb",
+          "key": 32,
+          "iv": 4,
+          "authTagLength": false,
+          "id": 156
+        },
+        "rc4": {
+          "cipher": "rc4",
+          "key": 32,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 157
+        },
+        "rc4-40": {
+          "cipher": "rc4-40",
+          "key": 32,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 158
+        },
+        "rc4-hmac-md5": {
+          "cipher": "rc4-hmac-md5",
+          "key": 32,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 159
+        },
+        "seed": {
+          "cipher": "seed",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 160
+        },
+        "seed-cbc": {
+          "cipher": "seed-cbc",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 161
+        },
+        "seed-cfb": {
+          "cipher": "seed-cfb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 162
+        },
+        "seed-ecb": {
+          "cipher": "seed-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 163
+        },
+        "seed-ofb": {
+          "cipher": "seed-ofb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 164
+        },
+        "sm4": {
+          "cipher": "sm4",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 165
+        },
+        "sm4-cbc": {
+          "cipher": "sm4-cbc",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 166
+        },
+        "sm4-cfb": {
+          "cipher": "sm4-cfb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 167
+        },
+        "sm4-ctr": {
+          "cipher": "sm4-ctr",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 168
+        },
+        "sm4-ecb": {
+          "cipher": "sm4-ecb",
+          "key": 8,
+          "iv": 0,
+          "authTagLength": false,
+          "id": 169
+        },
+        "sm4-ofb": {
+          "cipher": "sm4-ofb",
+          "key": 8,
+          "iv": 8,
+          "authTagLength": false,
+          "id": 170
+        }
+      },
+      "life": 1610654023648,
+      "tags": []
+    },
+    {
+      "key": "hmac",
+      "val": "be759d91a5e880d716528a3db20848499cde87b2acc4109d6cfbc3ee266fc9f80349abc7f1472de453c62130a6f4e5da28336727c3c290d4c768b47430ef8394",
+      "life": 1610654023650,
+      "tags": []
+    }
+  ]
+}

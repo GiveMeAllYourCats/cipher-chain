@@ -12,7 +12,7 @@
 [![Node version](https://img.shields.io/node/v/cipher-chain.svg)](https://www.npmjs.com/package/cipher-chain)
 [![Help us and star this project](https://img.shields.io/github/stars/michaeldegroot/cipher-chain.svg?style=social)](https://github.com/michaeldegroot/cipher-chain)
 
-Symmetric encryption and decryption of string(s) or file(s) protected via a `secret` string
+Symmetric encryption and decryption in cipher chains protected by a unique `secret` strings per chain, Can compress data (zlib), Can encrypt/decrypt files and whole directories. Uses [zxcvbn](https://github.com/dropbox/zxcvbn) for `secret` requirements with minimum of 24 characters per secret. encrypt-then-mac authentication.
 
 ## Installation
 
@@ -24,10 +24,11 @@ npm install cipher-chain --save
 
 #### - Encrypting
 
-When creating a `cipher-chain` instance you are presented with some options, First you need to define a `secret` this is a array and it needs to have the same length as your `chain` variable.
-So secondly you will need to define a `chain`, this will be the path the encryption/decryption process goes through to get the encrypted and plaintext respectively. `chain` is a array with strings representing all cipher algorithms. The cipher algorithm list can be viewed by calling `cipherchain.ciphers`
+When creating a `cipher-chain` instance you are presented with some options, First you need to define a `secret` this is a array and it needs to have the same length as your `chain` variable. Secrets need to be unique from each other, error will be thrown if not. If `enableSecurityRequirements` is enabled (default true) then secret(s) need to be min 24 chars and comply to at least a score of 3 from the [zxcvbn](https://github.com/dropbox/zxcvbn) package.
 
-When you create a `cipher-chain` instance the script goes through the `chain` list and for every algorithm it creates a kdf generated hashed key derived from the `secret` array corresponding index of the current chain index that then matches the `key` length requirements for that particular cipher
+So secondly you will need to define a `chain`, this will be the path the encryption/decryption process goes through to get the encrypted and plaintext respectively. `chain` is a array with strings representing all cipher algorithms names. The cipher algorithm list can be viewed by calling `cipherchain.ciphers`
+
+When you create a `cipher-chain` instance the script goes through the `chain` list and for every algorithm it creates a KDF generated hashed key derived from the `secret` array corresponding index of the current chain index which is used as the key for that specific encipherment algorithm in the chain.
 
 Then when you call the `cipherchain.encrypt`, `cipherchain.encryptFile(file)` or `cipherchain.encryptDirectory(directory)` function it checks what the `chain` is and will convert your `plaintext` to `ciphertext` via traversal of the `chain` list.
 
@@ -49,7 +50,11 @@ For each algorithm encryption `chain` pass a random `initialization vector` is g
 
 All encrypted strings have the same format and recgonisable by the starting prefix of `@CC4-` indicating its a cipher-chain encrypted string and its major version 3, so if there are breaking changes because of a major version update in the module, the encrypted ciphertext wont be compatible to decrypt. They can look like this:
 
-`@CC4-72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60 d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195:1:0:ab561e52d1e9c68d3d63c62952c0314f3c73ff01 99657849ef20708af21a291e:3522e975157c2dc1:cbb83e90afeb9a3de67638502148c40b`
+`@CC4-56832c1b9e806bc1164523ba86925707a3ba6eb59716ae3c148426a036967f9469bb73a7cdd038969b6172098465ea33e97de072ba112112cf46f00ecf31dd40:80c0b153a3f83b34b481c3e5843c2c9c:038bb16ebbd0bdcecec2d82b:53b04561ea178266f146b52f7dd1e07386f5c95bf1efad75f06bbbbc702ea0b8:0ed43ae8`
+
+or if `compressData` option is set to true:
+
+`eJwVj8dtBEAMAysysAqrcC8DV4li/yV4/SRIgsPf75d/FGskqtMw9jJyWxMfVgftdYNwttmUubAjWrygCVAcVZan8hnlnDcpQwwGq+9KX2BEvngkKSCX0aKllmFMKu4ltSr94MUocIQZclvfID8v7nryeOYHICKu1lzr8RBCnOalj+aDnHMYyF/eGtfx/8k+dQKLpPF0A9PKg8cAffabdXqV+CDVFdf+Az+9SUQ=`
 
 If you look closely you can see `:` being delimiters which will have the following result when split:
 
@@ -57,29 +62,27 @@ first the `@CC4-` is removed internally when decrypting the string
 
 ```js
 ;[
-	'72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195',
-	'1',
-	'0',
-	'ab561e52d1e9c68d3d63c62952c0314f3c73ff0199657849ef20708af21a291e',
-	'3522e975157c2dc1',
-	'cbb83e90afeb9a3de67638502148c40b'
+	'56832c1b9e806bc1164523ba86925707a3ba6eb59716ae3c148426a036967f9469bb73a7cdd038969b6172098465ea33e97de072ba112112cf46f00ecf31dd40',
+	'80c0b153a3f83b34b481c3e5843c2c9c',
+	'038bb16ebbd0bdcecec2d82b',
+	'53b04561ea178266f146b52f7dd1e07386f5c95bf1efad75f06bbbbc702ea0b8',
+	'0ed43ae8'
 ]
 ```
 
 The mapping for this format is as followed:
 
-`@CC[majorVersioNumberCipherChain]-[hmac]:[autoPadding]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
+`@CC[majorVersionNumberCipherChain]-[hmac]:[authTag]:[kdfSalt]:[initializationVector]:[encryptedData]`
 
 So we can conclude we have the following data when decrypting the string:
 
 ```js
 const data = {
-	hmac: '72887cf9ecf196d8b13bb05a6141a34c73af7ca719abf994d170ca2cc6629e169d743ef6c93c486079f60d8cbdf1b7787eee937fe9c4cf62522d0d4d8c304195',
-	autoPadding: '1',
-	authTag: '0',
-	kdfSalt: 'ab561e52d1e9c68d3d63c62952c0314f3c73ff0199657849ef20708af21a291e',
-	initializationVector: '3522e975157c2dc1',
-	encryptedData: 'cbb83e90afeb9a3de67638502148c40b'
+	hmac: '56832c1b9e806bc1164523ba86925707a3ba6eb59716ae3c148426a036967f9469bb73a7cdd038969b6172098465ea33e97de072ba112112cf46f00ecf31dd40',
+	authTag: '80c0b153a3f83b34b481c3e5843c2c9c',
+	kdfSalt: '038bb16ebbd0bdcecec2d82b',
+	initializationVector: '53b04561ea178266f146b52f7dd1e07386f5c95bf1efad75f06bbbbc702ea0b8',
+	encryptedData: '0ed43ae8'
 }
 ```
 
@@ -98,25 +101,28 @@ const aAsyncFunction = async () => {
 
 ## Options
 
-- `secret` The secret(s) to use for specific chains, needs to be a array and as long as your `chain` option
-- `chain` Array with strings that hold the cipher algorithms you want to use as a path to traverse from plain to cipher and vice versa
-- `autoPadding` boolean to switch auto padding for the cipher
-- `concurrentFiles` how many concurrent files will be encrypted and decrypted at any given time. Default 100
-- `hmacAlgorithm` string for what algorith the hmac verify should use. Default `sha512`
-- `kdf` object setting for kdf, **see below**
-
-**kdf object setting for the kdf option**
+| Argument                     | Explanation                                                                                                                                                              | Default     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| `secret`                     | The secret(s) to use for specific chains, needs to be a array and as long as your `chain` option                                                                         | `undefined` |
+| `chain`                      | Array with strings that hold the cipher algorithms you want to use as a path to traverse from plain to cipher and vice versa                                             | `undefined` |
+| `autoPadding`                | Boolean to switch auto padding for the cipher.                                                                                                                           | `true`      |
+| `timingSafeCheck`            | Boolean for function equal check for hmac based on a constant-time algorithm without leaking timing information that would allow an attacker to guess one of the values. | `true`      |
+| `compressData`               | Boolean to compress end result after encryption to save data space, works for all encrypt functions                                                                      | `true`      |
+| `concurrentFiles`            | How many concurrent files will be encrypted and decrypted at any given time.                                                                                             | `20`        |
+| `enableSecurityRequirements` | Enables the [zxcvbn](https://github.com/dropbox/zxcvbn) package and min 24 char secret(s) requirements for extra security.                                               | `true`      |
+| `hmacAlgorithm`              | String for what algorith the hmac verify should use.                                                                                                                     | `sha512`    |
+| `kdf`                        | See Below                                                                                                                                                                | See Below   |
 
 ```js
-const argon2 = require('argon2')
+ // const argon2 = require('argon2')
 {
     use: 'argon2', // or blake2, scrypt, pbkdf2,
-    saltLength: 4, // salt length for the kdf, bigger value means bigger ciphertext data, especially with multiple chain encrypts
+    saltLength: 12, // salt length for the kdf, bigger value means bigger ciphertext data, especially with multiple chain encrypts
     options: {
       argon2: { // some argon2 setings you could do
         type: argon2.argon2i,
-        memoryCost: 1024 * 4, // 4mb
-        timeCost: 4
+        memoryCost: 1024 * 8,
+        timeCost: 6
       },
       pbkdf2: { // some pbkdf2 setings you could do, since 'use' in options is set to 'argon2' this is obsolete
         rounds: 10000,
@@ -191,7 +197,7 @@ const CipherChain = require('cipher-chain')
 
 const start = async () => {
 	const cipherchain = await new CipherChain({
-		secret: ['BxDAEaHZRqLZDVaz', 'WRWPiKEsEFMCmgHH', 'IeAujwvFmYFEzjOi'],
+		secret: ['BxDPiKEAEaHZPiKERqLZDVaz', 'WRWqLZDPiKEqLZDsEFMCmgqLZDHH', 'IeiKEBxDRwvFmYERqLZjOi'],
 		kdf: 'argon2',
 		chain: ['aes-256-gcm', 'blowfish', 'camellia-256-cbc'],
 		options: {

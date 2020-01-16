@@ -2,15 +2,16 @@ let crypto
 try {
   crypto = require('crypto')
 } catch (err) {
-  console.log('crypto support is disabled!')
-  process.exit()
+  throw new Error('crypto support is disabled!')
 }
 const fs = require('fs')
 const blake2 = require('blake2')
 const _ = require('lodash')
 const glob = require('glob')
+const zxcvbn = require('zxcvbn')
 const path = require('path')
 const argon2 = require('argon2')
+const zlib = require('zlib')
 const asyncPool = require('tiny-async-pool')
 const version = require('./package.json').version.split('.')[0]
 
@@ -24,8 +25,8 @@ class CipherChain {
         options: {
           argon2: {
             type: argon2.argon2i,
-            memoryCost: 1024 * 4, // 4mb
-            timeCost: 4
+            memoryCost: 1024 * 8,
+            timeCost: 6
           },
           pbkdf2: {
             rounds: 10000,
@@ -38,7 +39,10 @@ class CipherChain {
       this.kdfs = ['blake2', 'argon2', 'pbkdf2', 'scrypt']
 
       this.autoPadding = _.get(options, 'autoPadding', true)
-      this.concurrentFiles = _.get(options, 'concurrentFiles', 100)
+      this.timingSafeCheck = _.get(options, 'timingSafeCheck', true)
+      this.compressData = _.get(options, 'compressData', true)
+      this.enableSecurityRequirements = _.get(options, 'enableSecurityRequirements', true)
+      this.concurrentFiles = _.get(options, 'concurrentFiles', 20)
       this.maxEncryptFileInBytes = _.get(options, 'maxEncryptFileInBytes', 170000000)
       this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
 
@@ -69,6 +73,25 @@ class CipherChain {
         throw new Error('Secret array needs to have as much elements as the chain option')
       }
 
+      const duplicatePasswords = _.filter(this.secret, (val, i, iteratee) => _.includes(iteratee, val, i + 1))
+      if (duplicatePasswords.length >= 1) {
+        throw new Error('Each secret needs to be unique')
+      }
+
+      if (this.enableSecurityRequirements) {
+        let i = 1
+        for (let val of this.secret) {
+          i++
+          const zxcvbnResult = zxcvbn(val)
+          if (zxcvbnResult.score <= 2) {
+            throw new Error(`secret #${i} is a weak secret. ${zxcvbnResult.feedback.suggestions.join(' ')}`)
+          }
+          if (val.length <= 23) {
+            throw new Error(`secret #${i} is a weak secret. It's under 24 characters, you need ${24 - val.length} more characters`)
+          }
+        }
+      }
+
       this.ciphers = await require('./ciphers.js')()
       for (let index in this.chain) {
         const algorithm = this.chain[index]
@@ -96,10 +119,18 @@ class CipherChain {
 
     plaintext = `@CC${version}-${hmac}${plaintext}`
 
+    if (this.compressData) {
+      plaintext = zlib.deflateSync(plaintext).toString('base64')
+    }
+
     return plaintext
   }
 
   async decrypt(encrypted) {
+    try {
+      encrypted = zlib.inflateSync(Buffer.from(encrypted, 'base64')).toString('utf-8')
+    } catch (e) {}
+
     if (encrypted.slice(0, 5) != `@CC${version}-`) {
       throw new Error(`Not a encrypted cipher-chain version ${version} string`)
     }
@@ -109,8 +140,14 @@ class CipherChain {
     encrypted = encrypted.replace(computedHmac + ':', '')
     const hmac = `${await this.hmac(encrypted, this.secret.join(''))}`
 
-    if (crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(computedHmac)) === false) {
-      throw new Error('HMAC verification failed')
+    if (this.timingSafeCheck) {
+      if (crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(computedHmac)) === false) {
+        throw new Error('HMAC verification failed')
+      }
+    } else {
+      if (hmac !== computedHmac) {
+        throw new Error('HMAC verification failed')
+      }
     }
 
     let index = this.chain.length - 1
@@ -123,23 +160,23 @@ class CipherChain {
   }
 
   async encryptDirectory(dirpatt) {
-    const files = glob.sync('**/*', { cwd: dirpatt })
+    const files = glob.sync(dirpatt, { nodir: true })
     const encryptFile = file =>
       new Promise(async resolve => {
-        const fileToEncrypt = path.join(dirpatt, file)
-        await this.encryptFile(fileToEncrypt)
+        if (file.slice(file.length - 13) !== `.cipherchain${version}`) {
+          await this.encryptFile(file)
+        }
         return resolve()
       })
     await asyncPool(this.concurrentFiles, files, encryptFile)
   }
 
   async decryptDirectory(dirpatt) {
-    const files = glob.sync('**/*', { cwd: dirpatt })
+    const files = glob.sync(dirpatt, { nodir: true })
     const decryptFile = file =>
       new Promise(async resolve => {
-        const fileToDecrypt = path.join(dirpatt, file)
-        if (fs.existsSync(fileToDecrypt)) {
-          await this.decryptFile(fileToDecrypt)
+        if (file.slice(file.length - 13) === `.cipherchain${version}`) {
+          await this.decryptFile(file)
         }
         return resolve()
       })
@@ -148,38 +185,28 @@ class CipherChain {
 
   async encryptFile(file) {
     const stats = fs.statSync(file)
-    const fileSizeInBytes = stats['size']
+    const fileSizeInBytes = stats.size
     if (fileSizeInBytes >= this.maxEncryptFileInBytes) {
       throw new Error(
         `${file} is over ${fileSizeInBytes.toLocaleString()} bytes, maxEncryptFileInBytes is ${this.maxEncryptFileInBytes.toLocaleString()}`
       )
     }
-    const data = fs.readFileSync(file, 'base64')
-
-    const original = await this.encrypt(file)
-    const hashedFilename = this.randomBytes(64).toString('hex')
-    const jsonData = JSON.stringify({
-      data,
-      original,
-      filename: hashedFilename
-    })
-    const encryptedData = await this.encrypt(jsonData)
+    const data = Buffer.from(fs.readFileSync(file, 'base64'))
+    const hashedFilename = `${this.randomBytes(64).toString('hex')}.cipherchain${version}`
+    const fileData = `${file}\n${hashedFilename}\n${data}`
+    const encryptedData = await this.encrypt(fileData)
     fs.writeFileSync(file, encryptedData)
     fs.renameSync(file, path.join(path.dirname(file), hashedFilename))
     return path.join(path.dirname(file), hashedFilename)
   }
 
   async decryptFile(file) {
-    const data = fs.readFileSync(file, 'utf-8')
-    if (data.slice(0, 5) != `@CC${version}-`) {
-      return false
-    }
+    let data = fs.readFileSync(file, 'utf-8')
     const decryptedData = await this.decrypt(data)
-
-    const jsonData = JSON.parse(decryptedData)
-    const newFilename = await this.decrypt(jsonData.original)
-    fs.writeFileSync(file, Buffer.from(jsonData.data, 'base64'))
-    fs.renameSync(path.join(path.dirname(file), jsonData.filename), newFilename)
+    const fileData = decryptedData.split('\n')
+    const newFilename = fileData[0]
+    fs.writeFileSync(file, Buffer.from(fileData[2], 'base64'))
+    fs.renameSync(path.join(path.dirname(file), fileData[1]), newFilename)
 
     return true
   }
@@ -187,27 +214,22 @@ class CipherChain {
   async encryptInternal(plaintext, chain) {
     const iv = this.randomBytes(chain.cipher.iv)
     const cipher = await this.cipher(plaintext, chain.cipher.cipher, chain.kdf.hash, iv)
-    return `${cipher.autoPadding}:${cipher.authtag}:${chain.kdf.salt}:${iv}:${cipher.encrypted}`
+    return `${cipher.authtag}:${chain.kdf.salt}:${iv}:${cipher.encrypted}`
   }
 
   async decryptInternal(encrypted, index) {
     const encryptedSplit = encrypted.split(':')
 
-    if (encryptedSplit.length === 1) {
-      return encrypted
-    }
-
-    const autoPadding = !!encryptedSplit[0]
-    const authTag = encryptedSplit[1]
-    const kdfSalt = encryptedSplit[2]
-    const iv = encryptedSplit[3]
-    const encryption = encryptedSplit[4]
+    const authTag = encryptedSplit[0]
+    const kdfSalt = encryptedSplit[1]
+    const iv = encryptedSplit[2]
+    const encryption = encryptedSplit[3]
     const secret = await this.generateSecret(this.secret[index], kdfSalt, this.chain[index].cipher.key)
-    const options = {}
-    return await this.decipher(encryption, this.chain[index].cipher, secret, iv, autoPadding, authTag, options)
+    return await this.decipher(encryption, this.chain[index].cipher, secret, iv, authTag)
   }
 
-  async cipher(text, algorithm, key, iv, options = {}) {
+  async cipher(text, algorithm, key, iv) {
+    const options = {}
     if (_.get(this.ciphers[algorithm], 'authTagLength') !== false) {
       options.authTagLength = this.ciphers[algorithm].authTagLength
     }
@@ -234,12 +256,12 @@ class CipherChain {
     }
   }
 
-  async decipher(text, algorithm, key, iv, autoPadding, authtag = 0, options = {}) {
+  async decipher(text, algorithm, key, iv, authtag = 0, options = {}) {
     if (_.get(algorithm, 'authTagLength') !== false) {
       options.authTagLength = algorithm.authTagLength
     }
     const decipher = crypto.createDecipheriv(algorithm.cipher, key.hash, iv, options)
-    decipher.setAutoPadding(autoPadding)
+    decipher.setAutoPadding(this.autoPadding)
     if (authtag != 0) {
       decipher.setAuthTag(Buffer.from(authtag, 'hex'))
     }
