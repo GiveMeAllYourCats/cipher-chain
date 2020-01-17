@@ -38,6 +38,7 @@ class CipherChain {
       this.kdf = _.merge({}, standardKdfSettings, this.kdf)
       this.kdfs = ['blake2', 'argon2', 'pbkdf2', 'scrypt']
 
+      this.enableKnex = _.get(options, 'knex', false)
       this.autoPadding = _.get(options, 'autoPadding', true)
       this.timingSafeCheck = _.get(options, 'timingSafeCheck', true)
       this.compressData = _.get(options, 'compressData', true)
@@ -45,6 +46,11 @@ class CipherChain {
       this.concurrentFiles = _.get(options, 'concurrentFiles', 20)
       this.maxEncryptFileInBytes = _.get(options, 'maxEncryptFileInBytes', 170000000)
       this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
+
+      if (this.enableKnex) {
+        this.knex = require('knex')
+        this.knexHook()
+      }
 
       if (!_.get(options, 'chain')) {
         throw new Error('Must specify chain in instance options')
@@ -79,7 +85,7 @@ class CipherChain {
       }
 
       if (this.enableSecurityRequirements) {
-        let i = 1
+        let i = 0
         for (let val of this.secret) {
           i++
           const zxcvbnResult = zxcvbn(val)
@@ -110,6 +116,42 @@ class CipherChain {
     })
   }
 
+  knexHook() {
+    const instance = this
+
+    this.knex.QueryBuilder.extend('encryption', async function(...values) {
+      if (this._method === 'insert') {
+        for (let i = 0; i < this._single.insert.length; i++) {
+          for (let field in this._single.insert[i]) {
+            this._single.insert[i][field] = String(this._single.insert[i][field])
+            this._single.insert[i][field] = await instance.encrypt(this._single.insert[i][field])
+          }
+        }
+      } else if (this._method === 'select') {
+        let returnResult = []
+        const result = await this
+        for (let row of result) {
+          const obj = {}
+          for (let field in row) {
+            let data = row[field]
+            try {
+              data = await instance.decrypt(row[field])
+            } catch (e) {}
+            obj[field] = data
+          }
+          returnResult.push(obj)
+        }
+        return returnResult
+      } else if (this._method === 'update') {
+        for (let field in this._single.update) {
+          this._single.update[field] = await instance.encrypt(this._single.update[field])
+        }
+      }
+
+      return this
+    })
+  }
+
   async encrypt(plaintext) {
     for (let chain of this.chain) {
       plaintext = await this.encryptInternal(plaintext, chain)
@@ -130,6 +172,10 @@ class CipherChain {
     try {
       encrypted = zlib.inflateSync(Buffer.from(encrypted, 'base64')).toString('utf-8')
     } catch (e) {}
+
+    if (typeof encrypted !== 'string') {
+      throw new Error(`Encrypted needs to be a string`)
+    }
 
     if (encrypted.slice(0, 5) != `@CC${version}-`) {
       throw new Error(`Not a encrypted cipher-chain version ${version} string`)
