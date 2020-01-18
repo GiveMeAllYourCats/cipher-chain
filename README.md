@@ -198,13 +198,20 @@ const CipherChain = require('cipher-chain')
 const start = async () => {
 	const cipherchain = await new CipherChain({
 		secret: ['BxDPiKEAEaHZPiKERqLZDVaz', 'WRWqLZDPiKEqLZDsEFMCmgqLZDHH', 'IeiKEBxDRwvFmYERqLZjOi'],
-		kdf: 'argon2',
 		chain: ['aes-256-gcm', 'blowfish', 'camellia-256-cbc'],
-		options: {
-			argon2: {
-				timeCost: 6,
-				memoryCost: 1024 * 4,
-				parallelism: 1
+		kdf: {
+			use: 'argon2', // or blake2, scrypt, pbkdf2,
+			saltLength: 12, // salt length for the kdf, bigger value means bigger ciphertext data, especially with multiple chain encrypts
+			options: {
+				argon2: { // some argon2 setings you could do
+					type: argon2.argon2i,
+					memoryCost: 1024 * 8,
+					timeCost: 6
+				},
+				pbkdf2: { // some pbkdf2 setings you could do, since 'use' in options is set to 'argon2' this is obsolete
+					rounds: 10000,
+					hash: 'sha512'
+				}
 			}
 		}
 	})
