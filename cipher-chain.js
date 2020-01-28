@@ -48,7 +48,6 @@ class CipherChain {
       this.hmacAlgorithm = _.get(options, 'hmacAlgorithm', 'sha512')
 
       if (this.enableKnex) {
-        this.knex = require('knex')
         this.knexHook()
       }
 
@@ -117,6 +116,9 @@ class CipherChain {
   }
 
   knexHook() {
+    if (!this.knex) {
+      this.knex = require('knex')
+    }
     const instance = this
 
     this.knex.QueryBuilder.extend('encryption', async function(...values) {

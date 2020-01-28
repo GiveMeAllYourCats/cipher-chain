@@ -1,6 +1,6 @@
 {
   "name": "cipher-chain",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Encrypting and decrypting your data in chains made easy!",
   "main": "cipher-chain.js",
   "scripts": {
