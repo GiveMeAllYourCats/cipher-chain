@@ -51,7 +51,7 @@
   "license": "MIT",
   "dependencies": {
     "argon2": "^0.25.1",
-    "bcrypt": "^3.0.7",
+    "bcrypt": "^5.0.0",
     "blake2": "^4.0.0",
     "glob": "^7.1.6",
     "lodash": "^4.17.15",
